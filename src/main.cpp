@@ -301,9 +301,6 @@ int main()
     // std::cout << "texture1 location: " << loc1 << " (should be >= 0)\n";
     // std::cout << "texture2 location: " << loc2 << " (should be >= 0)\n";
 
-    lightShader.use();
-    lightShader.setVec3("lightPos", lightPos);
-
     while (!glfwWindowShouldClose(window)) 
     {
         float currentFrame = glfwGetTime();
@@ -328,21 +325,19 @@ int main()
 
         // Рендеринг основного куба
         lightShader.use();
-        lightShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        lightShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-        lightShader.setVec3("light.position", lightPos);
+        lightShader.setVec3("light.position", lightPos);      
         lightShader.setVec3("viewPos", camera.GetPosition());
 
         lightShader.setVec3 ("material.ambient",   1.0f, 0.5f, 0.31f);
         lightShader.setVec3 ("material.diffuse",   1.0f, 0.5f, 0.31f);
         lightShader.setVec3 ("material.specular",  0.5f, 0.5f, 0.5f);
         lightShader.setFloat("material.shininess", 32.0f);
-
+        
         lightShader.setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
-        lightShader.setVec3("light.diffuse",  0.5f, 0.5f, 0.5f); 
-        lightShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+        lightShader.setVec3("light.diffuse",  0.5f, 0.5f, 0.5f);
+        lightShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
-        float time = glfwGetTime(); 
+        float time = glfwGetTime(); //
 
         glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)fbWidth / (float)fbHeight, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
