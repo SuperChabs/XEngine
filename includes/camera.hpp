@@ -21,7 +21,7 @@ const float YAW         = -95.0f;
 const float PITCH       = 0.0f;
 const float SPEED       = 3.5f;
 const float SENSITIVITY = 0.1f;
-const float ZOOM        = 45.0f;
+const float ZOOM        = 55.0f;
 
 class Camera 
 {

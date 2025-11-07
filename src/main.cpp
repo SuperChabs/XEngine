@@ -227,7 +227,7 @@ int main()
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -311,7 +311,7 @@ int main()
 		lastFrame = currentFrame;
 
         // Обработка ввода
-        processInput(window);
+        processInput(window);//
 
         int fbWidth, fbHeight;
         glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
@@ -326,32 +326,46 @@ int main()
         // glActiveTexture(GL_TEXTURE1);
         // glBindTexture(GL_TEXTURE_2D, texture2);
 
-        lampShader.use();
-        lampShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        lampShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        // Рендеринг основного куба
+        lightShader.use();
+        lightShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+        lightShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        lightShader.setVec3("light.position", lightPos);
+        lightShader.setVec3("viewPos", camera.GetPosition());
 
-        float time = glfwGetTime();
+        lightShader.setVec3 ("material.ambient",   1.0f, 0.5f, 0.31f);
+        lightShader.setVec3 ("material.diffuse",   1.0f, 0.5f, 0.31f);
+        lightShader.setVec3 ("material.specular",  0.5f, 0.5f, 0.5f);
+        lightShader.setFloat("material.shininess", 32.0f);
+
+        lightShader.setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
+        lightShader.setVec3("light.diffuse",  0.5f, 0.5f, 0.5f); 
+        lightShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+
+        float time = glfwGetTime(); 
 
         glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)fbWidth / (float)fbHeight, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        lampShader.setMat4("projection", projection);
-        lampShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+        lightShader.setMat4("view", view);
 
         glm::mat4 model = glm::mat4(1.0f);
-        lampShader.setMat4("model", model);
+        lightShader.setMat4("model", model);
 
-        // Рендеринг куба (lit object)
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Также отрисовываем наш объект-"лампочку" 
-        lightShader.use();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        // Рендеринг джерела світла (лампи)
+        lampShader.use();
+        lampShader.setMat4("projection", projection);
+        lampShader.setMat4("view", view);
+
+        //lightPos = glm::vec3(sin(time+2), 1.0f, cos(time+2));
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2f)); // куб меньшего размера
-        lightShader.setMat4("model", model);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lampShader.setMat4("model", model);
 
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
