@@ -1,16 +1,19 @@
 #include "core/shader.hpp"
 
-Shader::Shader(const char *vertexPath, const char *fragmentPath)
+Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
     // Етап №1: Отримання вихідного коду вершинного/фрагментного шейдеру з змінної filePath  
     std::string vertexCode;
     std::string fragmentCode;
+    std::string geometryCode;
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
+    std::ifstream gShaderFile;
 
     // Переконуємося, що об'єкти ifstream можуть викинути виключення
     vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+    gShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     try 
     {
         // Відкриваємо файли
@@ -29,12 +32,23 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
         // Конвертуємо данні з потоку в рядкові змінні
         vertexCode   = vShaderStream.str();
         fragmentCode = fShaderStream.str();
+
+        if (geometryPath != nullptr) 
+        {
+            gShaderFile.open(geometryPath);
+            std::stringstream gShaderStream;
+            gShaderStream << gShaderFile.rdbuf();
+            gShaderFile.close();
+            geometryCode = gShaderStream.str();
+        }
     }
     catch (std::ifstream::failure e)
     {
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
         std::cout << "Cannot open vertex shader at " << vertexPath << std::endl;
         std::cout << "Cannot open fragment shader at " << fragmentPath << std::endl;
+        if (geometryPath != nullptr) 
+            std::cout << "Cannot open geometry shader at " << geometryPath << std::endl;
         return;
     }
     const char* vShaderCode = vertexCode.c_str();
@@ -55,6 +69,16 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
 
+    unsigned int geometry;
+    if (geometryPath != nullptr)
+    {
+        const char* gShaderCode = geometryCode.c_str();
+        geometry = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geometry, 1, &gShaderCode, NULL);
+        glCompileShader(geometry);
+        checkCompileErrors(geometry, "GEOMETRY");
+    }
+
     if (vertex == 0 || fragment == 0) 
     {
         std::cerr << "Shader compilation failed, skipping program link.\n";
@@ -66,6 +90,8 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     ID = glCreateProgram();
     glAttachShader(ID, vertex);
     glAttachShader(ID, fragment);
+    if (geometryPath != nullptr)
+        glAttachShader(ID, geometry);
     glLinkProgram(ID);
     checkCompileErrors(ID, "PROGRAM");
     if (ID == 0) 
@@ -77,6 +103,8 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     // Після того, як ми связали шейдери з нашою программою, видаляємо їх, так як вони нам більше не потрібні
     glDeleteShader(vertex);
     glDeleteShader(fragment);
+    if (geometryPath != nullptr) 
+        glDeleteShader(geometry);
 }
 
 // Активація шейдера

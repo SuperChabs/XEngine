@@ -39,6 +39,11 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 add_compile_definitions(ASSETS_PATH="${CMAKE_BINARY_DIR}/assets")
 
+# Встановлення робочої директорії для виконання
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 include(GNUInstallDirs)
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
