@@ -3,12 +3,21 @@
 #include "rendering/Skybox.h"
 #include "utils/Logger.h"
 #include "rendering/primitive/PrimitivesFactory.h"
+#include "scene/SceneManager.h"
 
 #include <imgui.h>
 
 #include <memory>
+#include <unordered_map>
 
 #define DEBUG
+
+struct ObjectParams 
+{
+    bool autoRotate = false;
+    float rotateSpeed = 50.0f; 
+};
+
 class MyGame : public Application 
 {
 private:
@@ -22,10 +31,12 @@ private:
     
     glm::vec3 lightPos;
     float heightScale;
-    // Cube control
+
     SceneObject* cubeObject = nullptr;
     bool cubeAutoRotate = false;
-    float cubeRotateSpeed = 50.0f; // degrees per second
+    float cubeRotateSpeed = 50.0f; 
+
+    std::unordered_map<uint64_t, ObjectParams> objectParams;
 
 protected:
     void OnInitialize() override 
@@ -87,18 +98,16 @@ protected:
             else
                 heightScale = 1.0f;
         }
-        
-        if (cubeObject)
+
+        if (GetSceneManager()->GetObjectCount() > 0 && cubeObject)
         {
-            float moveSpeed = 2.0f; 
-            glm::vec3 translation(0.0f);
-
-            if (translation != glm::vec3(0.0f))
-                cubeObject->transform.Translate(translation);
-
-            if (cubeAutoRotate)
+            for (const auto& obj : GetSceneManager()->GetObjects()) 
             {
-                cubeObject->transform.Rotate(glm::vec3(0.0f, cubeRotateSpeed * deltaTime, 0.0f));
+                auto& params = objectParams[obj->ID];
+                
+                if (params.autoRotate)
+                    obj->transform.Rotate(glm::vec3(0.0f, params.rotateSpeed * deltaTime, 0.0f));
+                
             }
         }
     }
@@ -122,29 +131,30 @@ protected:
                 if (ImGui::MenuItem("Close", "Ctrl+W"))  { Stop(); }
                 ImGui::EndMenu();
             }
-            ImGui::EndMenuBar();
-
+            
             if (ImGui::BeginMenu("Create")) 
             {
                 if (ImGui::MenuItem("Cube")) 
                 {
-                    if (!cubeObject)
+                    Mesh* cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+                    if (cubeMesh)
                     {
-                        Mesh* cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
-                        if (cubeMesh)
-                        {
-                            std::unique_ptr<Model> cubeModel = std::make_unique<Model>(cubeMesh, "Cube");
-                            cubeObject = GetSceneManager()->AddObject("Cube", cubeModel.release());
-                        }
+                        std::unique_ptr<Model> cubeModel = std::make_unique<Model>(cubeMesh, "Cube");
+                        cubeObject = GetSceneManager()->AddObject("Cube", cubeModel.release());
+
+                        objectParams[cubeObject->ID] = ObjectParams();
+
+                        Logger::Log(LogLevel::INFO, "Cube created and added to scene with ID: " + std::to_string(cubeObject->ID));
                     }
                 }
                 
                 ImGui::EndMenu();
             }
+            ImGui::EndMenuBar();
         }
 
         float fps = 1.0f / GetTime()->GetDeltaTime();
-        ImGui::Text("FPS: %", fps);
+        ImGui::Text("FPS: %.0f", fps);
         ImGui::Text("Frame time: %.3f ms", GetTime()->GetDeltaTime() * 1000.0f);
         
         ImGui::Separator();
@@ -224,27 +234,58 @@ protected:
             mainShader->setFloat("height_scale", heightScale);
 
         ImGui::Separator();
-        ImGui::Text("Selected Object: Cube");
-        if (cubeObject)
+
+        if (GetSceneManager()->GetObjectCount() > 0) 
         {
-            glm::vec3 pos = cubeObject->transform.GetPosition();
-            if (ImGui::SliderFloat3("Cube Position", &pos[0], -10.0f, 10.0f))
-                cubeObject->transform.SetPosition(pos);
+            for (const auto& obj : GetSceneManager()->GetObjects()) 
+            {
+                char headerLabel[64];
+                snprintf(headerLabel, sizeof(headerLabel), "%s (ID: %llu)", obj->name.c_str(), obj->ID);
+                
+                ImGui::PushID(static_cast<int>(obj->ID));
+                
+                if (ImGui::CollapsingHeader(headerLabel)) 
+                {
+                    glm::vec3 pos = obj->transform.GetPosition();
+                    if (ImGui::SliderFloat3("Position", &pos[0], -10.0f, 10.0f))
+                        obj->transform.SetPosition(pos);
 
-            glm::vec3 rot = cubeObject->transform.GetRotation();
-            if (ImGui::SliderFloat3("Cube Rotation", &rot[0], -360.0f, 360.0f))
-                cubeObject->transform.SetRotation(rot);
+                    glm::vec3 rot = obj->transform.GetRotation();
+                    if (ImGui::SliderFloat3("Rotation", &rot[0], -360.0f, 360.0f))
+                        obj->transform.SetRotation(rot);
 
-            float scale = cubeObject->transform.GetScale().x;
-            if (ImGui::SliderFloat("Cube Scale", &scale, 0.01f, 5.0f))
-                cubeObject->transform.SetScale(scale);
+                    float scale = obj->transform.GetScale().x;
+                    if (ImGui::SliderFloat("Scale", &scale, 0.01f, 5.0f))
+                        obj->transform.SetScale(scale);
 
-            if (ImGui::Checkbox("Auto Rotate", &cubeAutoRotate)) {}
-            ImGui::DragFloat("Rotate Speed", &cubeRotateSpeed, 1.0f, 0.0f, 1000.0f);
+                    ImGui::Separator();
+
+                    auto& params = objectParams[obj->ID];
+                    
+                    ImGui::Checkbox("Auto Rotate", &params.autoRotate);
+                    ImGui::DragFloat("Rotate Speed", &params.rotateSpeed, 1.0f, -1000.0f, 1000.0f);
+                    
+                    ImGui::Separator();
+                    
+                    // if (ImGui::Button("Delete Object"))
+                    // {
+                    //     GetSceneManager()->RemoveObject(obj.get());
+                    //     objectParams.erase(obj->ID);
+                    //     ImGui::PopID();
+                        
+                    //     Logger::Log(LogLevel::INFO, "Object with ID " + std::to_string(obj->ID) + " deleted from scene");
+
+                    //     break; 
+                    // }
+                }
+                
+                ImGui::PopID();
+            }
         }
         else
         {
-            ImGui::Text("No cube in scene. Use Create->Cube to add one.");
+            ImGui::Text("No objects in scene");
+            ImGui::Text("Use Create -> Cube to add objects");
         }
 
         ImGui::End();

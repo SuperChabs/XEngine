@@ -3,21 +3,27 @@
 
 #include "scene/Model.h"
 #include "scene/Transform.h"
+
 #include <memory>
 #include <vector>
 
 struct SceneObject 
 {
     std::string name;
+
     Model* model;
     Transform transform;
+
+    uint64_t ID;
     bool isActive;
+
+    static inline uint64_t counter = 0;
     
     SceneObject(const std::string& objName, Model* mdl) 
-        : name(objName), model(mdl), isActive(true) {}
+        : name(objName), model(mdl), isActive(true), ID(counter++) {}
         
     SceneObject(const std::string& objName, Model* mdl, const Transform& trans)  
-        : name(objName), model(mdl), transform(trans), isActive(true) {}
+        : name(objName), model(mdl), transform(trans), isActive(true), ID(counter++) {}
 };
 
 class SceneManager 
@@ -38,7 +44,7 @@ public:
     void RenderAll(Shader& shader);
     void Update(float deltaTime);
     
-    const std::vector<std::unique_ptr<SceneObject>>& GetObjects() const { return objects; }
+    std::vector<std::unique_ptr<SceneObject>>& GetObjects() { return objects; }
     size_t GetObjectCount() const { return objects.size(); }
 };
 

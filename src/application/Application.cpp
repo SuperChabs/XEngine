@@ -9,6 +9,11 @@
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (app && app->GetWindow())
+    {
+        app->GetWindow()->SetSize(width, height);
+    }
 }
 
 Application::Application(int width, int height, const std::string& title)

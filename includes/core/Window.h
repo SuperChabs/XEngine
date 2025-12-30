@@ -37,6 +37,8 @@ public:
     
     void SetCursorMode(int mode);
     
+    // Update stored framebuffer size
+    void SetSize(int w, int h);
     GLFWwindow* GetGLFWWindow() { return window; }
     int GetWidth() const { return width; }
     int GetHeight() const { return height; }
