@@ -87,18 +87,11 @@ protected:
             else
                 heightScale = 1.0f;
         }
-
-        // Optional keyboard-driven cube translation/rotation
+        
         if (cubeObject)
         {
-            float moveSpeed = 2.0f; // units per second
+            float moveSpeed = 2.0f; 
             glm::vec3 translation(0.0f);
-            if (GetInput()->IsKeyPressed(XKey::KEY_UP))    translation.y += moveSpeed * deltaTime;
-            if (GetInput()->IsKeyPressed(XKey::KEY_DOWN))  translation.y -= moveSpeed * deltaTime;
-            if (GetInput()->IsKeyPressed(XKey::KEY_LEFT))  translation.x -= moveSpeed * deltaTime;
-            if (GetInput()->IsKeyPressed(XKey::KEY_RIGHT)) translation.x += moveSpeed * deltaTime;
-            if (GetInput()->IsKeyPressed(XKey::KEY_PAGE_UP))   translation.z += moveSpeed * deltaTime;
-            if (GetInput()->IsKeyPressed(XKey::KEY_PAGE_DOWN)) translation.z -= moveSpeed * deltaTime;
 
             if (translation != glm::vec3(0.0f))
                 cubeObject->transform.Translate(translation);
@@ -124,8 +117,8 @@ protected:
         {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
-                if (ImGui::MenuItem("Save", "Ctrl+S"))   { /* Do stuff */ }
+                if (ImGui::MenuItem("Open..", "Ctrl+O")) { Logger::Log(LogLevel::INFO, "There is no funktional"); }
+                if (ImGui::MenuItem("Save", "Ctrl+S"))   { Logger::Log(LogLevel::INFO, "There is no funktional"); }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))  { Stop(); }
                 ImGui::EndMenu();
             }
