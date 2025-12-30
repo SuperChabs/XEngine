@@ -13,6 +13,8 @@
 
 #include <vector>
 #include <memory>
+#include <string>
+#include <utility>
 
 class Model 
 {
@@ -22,7 +24,16 @@ private:
     std::string directory;
 
 public:
-    Model(const char* path) {loadModel(path);}
+    Model(const char* path) 
+    {
+        loadModel(path);
+    }
+
+    Model(Mesh* mesh, std::string name = "") 
+    { 
+        meshes.push_back(std::move(*mesh)); 
+    }
+
     void Draw(Shader &shader);
 
 private:

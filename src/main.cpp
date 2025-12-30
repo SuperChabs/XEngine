@@ -2,6 +2,7 @@
 #include "core/Shader.h"
 #include "rendering/Skybox.h"
 #include "utils/Logger.h"
+#include "rendering/primitive/PrimitivesFactory.h"
 
 #include <imgui.h>
 
@@ -21,6 +22,10 @@ private:
     
     glm::vec3 lightPos;
     float heightScale;
+    // Cube control
+    SceneObject* cubeObject = nullptr;
+    bool cubeAutoRotate = false;
+    float cubeRotateSpeed = 50.0f; // degrees per second
 
 protected:
     void OnInitialize() override 
@@ -82,6 +87,27 @@ protected:
             else
                 heightScale = 1.0f;
         }
+
+        // Optional keyboard-driven cube translation/rotation
+        if (cubeObject)
+        {
+            float moveSpeed = 2.0f; // units per second
+            glm::vec3 translation(0.0f);
+            if (GetInput()->IsKeyPressed(XKey::KEY_UP))    translation.y += moveSpeed * deltaTime;
+            if (GetInput()->IsKeyPressed(XKey::KEY_DOWN))  translation.y -= moveSpeed * deltaTime;
+            if (GetInput()->IsKeyPressed(XKey::KEY_LEFT))  translation.x -= moveSpeed * deltaTime;
+            if (GetInput()->IsKeyPressed(XKey::KEY_RIGHT)) translation.x += moveSpeed * deltaTime;
+            if (GetInput()->IsKeyPressed(XKey::KEY_PAGE_UP))   translation.z += moveSpeed * deltaTime;
+            if (GetInput()->IsKeyPressed(XKey::KEY_PAGE_DOWN)) translation.z -= moveSpeed * deltaTime;
+
+            if (translation != glm::vec3(0.0f))
+                cubeObject->transform.Translate(translation);
+
+            if (cubeAutoRotate)
+            {
+                cubeObject->transform.Rotate(glm::vec3(0.0f, cubeRotateSpeed * deltaTime, 0.0f));
+            }
+        }
     }
 
     void RenderUI() override
@@ -104,6 +130,24 @@ protected:
                 ImGui::EndMenu();
             }
             ImGui::EndMenuBar();
+
+            if (ImGui::BeginMenu("Create")) 
+            {
+                if (ImGui::MenuItem("Cube")) 
+                {
+                    if (!cubeObject)
+                    {
+                        Mesh* cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+                        if (cubeMesh)
+                        {
+                            std::unique_ptr<Model> cubeModel = std::make_unique<Model>(cubeMesh, "Cube");
+                            cubeObject = GetSceneManager()->AddObject("Cube", cubeModel.release());
+                        }
+                    }
+                }
+                
+                ImGui::EndMenu();
+            }
         }
 
         float fps = 1.0f / GetTime()->GetDeltaTime();
@@ -186,6 +230,30 @@ protected:
         if (ImGui::SliderFloat("Height Scale", &heightScale, 0.0f, 1.0f))
             mainShader->setFloat("height_scale", heightScale);
 
+        ImGui::Separator();
+        ImGui::Text("Selected Object: Cube");
+        if (cubeObject)
+        {
+            glm::vec3 pos = cubeObject->transform.GetPosition();
+            if (ImGui::SliderFloat3("Cube Position", &pos[0], -10.0f, 10.0f))
+                cubeObject->transform.SetPosition(pos);
+
+            glm::vec3 rot = cubeObject->transform.GetRotation();
+            if (ImGui::SliderFloat3("Cube Rotation", &rot[0], -360.0f, 360.0f))
+                cubeObject->transform.SetRotation(rot);
+
+            float scale = cubeObject->transform.GetScale().x;
+            if (ImGui::SliderFloat("Cube Scale", &scale, 0.01f, 5.0f))
+                cubeObject->transform.SetScale(scale);
+
+            if (ImGui::Checkbox("Auto Rotate", &cubeAutoRotate)) {}
+            ImGui::DragFloat("Rotate Speed", &cubeRotateSpeed, 1.0f, 0.0f, 1000.0f);
+        }
+        else
+        {
+            ImGui::Text("No cube in scene. Use Create->Cube to add one.");
+        }
+
         ImGui::End();
     }
 
@@ -201,7 +269,7 @@ protected:
         mainShader->use();
         mainShader->setMat4("projection", projection);
         mainShader->setMat4("view", view);
-        mainShader->setMat4("model", glm::mat4(1.0f));
+        // model matrix will be set per-object in SceneManager::RenderAll
         mainShader->setVec3("viewPos", GetCamera()->GetPosition());
         mainShader->setVec3("lightPos", lightPos);
         mainShader->setFloat("height_scale", heightScale);
@@ -213,14 +281,16 @@ protected:
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, depthMap);
         
-        GetRenderer()->GetPrimitives()->RenderQuad();
+        // primitives were created once during initialization or via the Create menu
+        // SceneManager will render all objects
+        GetSceneManager()->RenderAll(*mainShader);
         
         // Рендеринг позиції світла
-        glm::mat4 lightModel = glm::mat4(1.0f);
-        lightModel = glm::translate(lightModel, lightPos);
-        lightModel = glm::scale(lightModel, glm::vec3(0.1f));
-        mainShader->setMat4("model", lightModel);
-        GetRenderer()->GetPrimitives()->RenderQuad();
+        // glm::mat4 lightModel = glm::mat4(1.0f);
+        // lightModel = glm::translate(lightModel, lightPos);
+        // lightModel = glm::scale(lightModel, glm::vec3(0.1f));
+        // mainShader->setMat4("model", lightModel);
+        // GetRenderer()->GetPrimitives()->RenderQuad();
         
         // Рендеринг скайбоксу
         skybox->Render(*GetCamera(), projection);

@@ -5,20 +5,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 Renderer::Renderer()
-    : primitives(nullptr)
 {
-}
-
-Renderer::~Renderer()
-{
-    if (primitives)
-        delete primitives;
 }
 
 void Renderer::Initialize()
 {
-    primitives = new PrimitivesRenderer();
-    primitives->Initialize();
     
     ApplySettings();
 

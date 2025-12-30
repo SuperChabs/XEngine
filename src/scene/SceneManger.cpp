@@ -1,14 +1,14 @@
 #include "scene/SceneManager.h"
 
-SceneObject* SceneManager::AddObject(Model* model)
+SceneObject* SceneManager::AddObject(const std::string& name, Model* model)
 {
-    objects.push_back(std::make_unique<SceneObject>(model));
+    objects.push_back(std::make_unique<SceneObject>(name, model));
     return objects.back().get();
 }
 
-SceneObject* SceneManager::AddObject(Model* model, const Transform& transform)
+SceneObject* SceneManager::AddObject(const std::string& name, Model* model, const Transform& transform)
 {
-    objects.push_back(std::make_unique<SceneObject>(model, transform));
+    objects.push_back(std::make_unique<SceneObject>(name, model, transform));
     return objects.back().get();
 }
 

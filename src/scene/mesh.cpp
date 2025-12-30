@@ -9,6 +9,12 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     material = std::make_unique<Material>(textures);    
 }
 
+Mesh::Mesh(GPUMesh* gpuMeshPtr, Material* materialPtr)
+{
+    gpuMesh = std::unique_ptr<GPUMesh>(gpuMeshPtr);
+    material = std::unique_ptr<Material>(materialPtr);
+}
+
 void Mesh::Draw(Shader& shader)
 {  
     material->Bind(shader);

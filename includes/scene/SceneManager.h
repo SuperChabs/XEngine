@@ -8,15 +8,16 @@
 
 struct SceneObject 
 {
+    std::string name;
     Model* model;
     Transform transform;
     bool isActive;
     
-    SceneObject(Model* mdl) 
-        : model(mdl), isActive(true) {}
+    SceneObject(const std::string& objName, Model* mdl) 
+        : name(objName), model(mdl), isActive(true) {}
         
-    SceneObject(Model* mdl, const Transform& trans) 
-        : model(mdl), transform(trans), isActive(true) {}
+    SceneObject(const std::string& objName, Model* mdl, const Transform& trans)  
+        : name(objName), model(mdl), transform(trans), isActive(true) {}
 };
 
 class SceneManager 
@@ -28,8 +29,8 @@ public:
     SceneManager() = default;
     ~SceneManager() = default;
     
-    SceneObject* AddObject(Model* model);
-    SceneObject* AddObject(Model* model, const Transform& transform);
+    SceneObject* AddObject(const std::string& name, Model* model);
+    SceneObject* AddObject(const std::string& name, Model* model, const Transform& transform);
     
     void RemoveObject(SceneObject* object);
     void Clear();

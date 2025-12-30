@@ -1,9 +1,10 @@
 #include "rendering/GPUMesh.h"
 
 // GPUMesh implementation
-GPUMesh::GPUMesh(const std::vector<Vertex>& vertices, 
-                 const std::vector<unsigned int>& indices)
+GPUMesh::GPUMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices)
 {
+    usedIndices = true;
+
     indexCount = indices.size();
 
     VAO = std::make_unique<VertexArray>();  
@@ -55,11 +56,36 @@ GPUMesh::GPUMesh(const std::vector<Vertex>& vertices,
     // glBindVertexArray(0);
 }
 
+GPUMesh::GPUMesh(const float* data, size_t dataSize, const int stride)
+{
+    usedIndices = false;
+
+    vertexCount = dataSize / (stride * sizeof(float));
+    indexCount = 0; 
+    
+    VAO = std::make_unique<VertexArray>();
+    VBO = std::make_unique<VertexBuffer>();
+    
+    VBO->SetData(data, dataSize);
+    
+    VAO->Bind();
+    VBO->Bind();
+    
+    VAO->AddAttribute(0, 3, GL_FLOAT, false, stride * sizeof(float), 0);
+    VAO->AddAttribute(1, 3, GL_FLOAT, false, stride * sizeof(float), 3 * sizeof(float));
+    VAO->AddAttribute(2, 2, GL_FLOAT, false, stride * sizeof(float), 6 * sizeof(float));
+    
+    VAO->Unbind();
+}
+
 void GPUMesh::Draw()
 {
     VAO->Bind();
     // glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, 0);
+    if (usedIndices)
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, 0);
+    else 
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));
     VAO->Unbind();
     // glBindVertexArray(0);
 }

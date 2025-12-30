@@ -3,9 +3,12 @@
 
 #include "core/Camera.h"
 #include "core/Shader.h"
-#include "rendering/Primitives.h"
 #include "scene/SceneManager.h"
+#include "rendering/primitive/PrimitivesFactory.h"
+
 #include <glm/glm.hpp>
+
+#include <memory>
 
 struct RenderSettings 
 {
@@ -20,13 +23,13 @@ class Renderer
 {
 private:
     RenderSettings settings;
-    PrimitivesRenderer* primitives;
+
+    std::unique_ptr<PrimitivesFactory> primitives;
     
     void ApplySettings();
 
 public:
     Renderer();
-    ~Renderer();
     
     void Initialize();
     void Clear();
@@ -39,11 +42,11 @@ public:
                      int screenWidth, int screenHeight);
     
     RenderSettings& GetSettings() { return settings; }
-    PrimitivesRenderer* GetPrimitives() { return primitives; }
+    PrimitivesFactory* GetPrimitives() { return primitives.get(); }
     
     void EnableWireframe(bool enable);
     void EnableDepthTest(bool enable);
     void EnableCullFace(bool enable);
 };
 
-#endif
+#endif // RENDERER_H
