@@ -25,7 +25,7 @@ private:
     bool isViewportHovered;
     bool isViewportFocused;
     
-    std::unique_ptr<Framebuffer> framebuffer;  // Додали
+    std::unique_ptr<Framebuffer> framebuffer;  
     
     void RenderControlPanel(std::function<void()> onCreateCube);
     void RenderSceneHierarchy(SceneManager* sceneManager);
@@ -35,22 +35,21 @@ private:
     void RenderMenuBar(std::function<void()> onCreateCube);
     void RenderViewport();
 
+    void ImGuiWindowFlagSettings();
+
 public:
     EditorLayout();
-    
-    void BeginFrame();
-    void EndFrame();
     
     void RenderEditor(SceneManager* sceneManager, Camera* camera, Renderer* renderer,
                       std::function<void()> onCreateCube);
     
-    ImVec2 GetViewportSize() const;
-    ImVec2 GetViewportPos() const;
+    ImVec2 GetViewportSize() const { return viewportSize; }
+    ImVec2 GetViewportPos() const { return viewportPos; }
     bool IsViewportHovered() const { return isViewportHovered; }
     bool IsViewportFocused() const { return isViewportFocused; }
     SceneObject* GetSelectedObject() const { return selectedObject; }
     
-    Framebuffer* GetFramebuffer() const { return framebuffer.get(); }  // Додали
+    Framebuffer* GetFramebuffer() const { return framebuffer.get(); }  
     
     void SetSelectedObject(SceneObject* obj) { selectedObject = obj; }
 };

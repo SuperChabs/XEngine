@@ -92,84 +92,85 @@ void Engine::OnUpdate(float deltaTime)
 
 void Engine::RenderUI()
 {    
-    
     if (!editorLayout)
     {
         Logger::Log(LogLevel::ERROR, "EditorLayout is null!");
         return;
     }
-    
-    if (!editorLayout->GetFramebuffer())
-    {
-        Logger::Log(LogLevel::ERROR, "Framebuffer is null!");
-        return;
-    }
-    
-    Framebuffer* fb = editorLayout->GetFramebuffer();
-    ImVec2 viewportSize = editorLayout->GetViewportSize();
-    
-    fb->Bind();
 
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);  
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glEnable(GL_DEPTH_TEST);
-    
-    if (viewportSize.x > 0 && viewportSize.y > 0)
+    // Просто рендеримо UI панелі
+    editorLayout->RenderEditor(
+        GetSceneManager(),
+        GetCamera(),
+        GetRenderer(),
+        [this]() {
+            Mesh* gameMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+            if (gameMesh)
+            {
+                std::unique_ptr<Model> gameModel = std::make_unique<Model>(gameMesh, "Cube");
+                SceneObject* newObj = GetSceneManager()->AddObject("Cube", std::move(gameModel));
+                objectParams[newObj->objectID] = ObjectParams();
+                Logger::Log(LogLevel::INFO, "Cube created with ID: " + std::to_string(newObj->objectID));
+            }
+        }
+    );
+}
+
+void Engine::OnRender()
+{
+    // === РЕНДЕР 3D СЦЕНИ В FRAMEBUFFER ===
+    if (editorLayout && editorLayout->GetFramebuffer())
     {
-        glm::mat4 projection = glm::perspective(
-            glm::radians(GetCamera()->GetZoom()), 
-            viewportSize.x / viewportSize.y, 
-            0.1f, 100.0f
-        );
-        glm::mat4 view = GetCamera()->GetViewMatrix();
+        Framebuffer* fb = editorLayout->GetFramebuffer();
+        ImVec2 viewportSize = editorLayout->GetViewportSize();
         
-        mainShader->use();
-        mainShader->setMat4("projection", projection);
-        mainShader->setMat4("view", view);
-        mainShader->setVec3("viewPos", GetCamera()->GetPosition());
-        mainShader->setVec3("lightPos", lightPos);
-        mainShader->setFloat("height_scale", heightScale);
+        // Прив'язуємо framebuffer
+        fb->Bind();
         
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseMap);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normalMap);
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
+        // Очищаємо (тестовий червоний колір)
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
         
-        GetSceneManager()->RenderAll(*mainShader);
+        if (viewportSize.x > 0 && viewportSize.y > 0)
+        {
+            // Матриці для 3D
+            glm::mat4 projection = glm::perspective(
+                glm::radians(GetCamera()->GetZoom()), 
+                viewportSize.x / viewportSize.y, 
+                0.1f, 100.0f
+            );
+            glm::mat4 view = GetCamera()->GetViewMatrix();
+            
+            // Рендеримо 3D сцену
+            mainShader->use();
+            mainShader->setMat4("projection", projection);
+            mainShader->setMat4("view", view);
+            mainShader->setVec3("viewPos", GetCamera()->GetPosition());
+            mainShader->setVec3("lightPos", lightPos);
+            mainShader->setFloat("height_scale", heightScale);
+            
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, diffuseMap);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, normalMap);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, depthMap);
+            
+            GetSceneManager()->RenderAll(*mainShader);
+            skybox->Render(*GetCamera(), projection);
+        }
         
-        skybox->Render(*GetCamera(), projection);
+        // Відв'язуємо framebuffer
+        fb->Unbind();
     }
     
-    fb->Unbind();
-    
+    // === ПІДГОТОВКА ЕКРАНУ ДЛЯ IMGUI ===
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, GetWindow()->GetWidth(), GetWindow()->GetHeight());
-    
-    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+    glClearColor(0.15f, 0.15f, 0.15f, 1.0f);  // Темно-сірий фон
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
-
-    if (editorLayout)
-    {
-        editorLayout->RenderEditor(
-            GetSceneManager(),
-            GetCamera(),
-            GetRenderer(),
-            [this]() {
-                Mesh* gameMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
-                if (gameMesh)
-                {
-                    std::unique_ptr<Model> gameModel = std::make_unique<Model>(gameMesh, "Cube");
-                    SceneObject* newObj = GetSceneManager()->AddObject("Cube", std::move(gameModel));
-                    objectParams[newObj->objectID] = ObjectParams();
-                    Logger::Log(LogLevel::INFO, "Cube created and added to scene with ID: " + std::to_string(newObj->objectID));
-                }
-            }
-        );
-    }
 }
 
 // void Engine::Menu()
@@ -383,44 +384,6 @@ void Engine::RenderUI()
 //         ImGui::End();
 //     }
 
-void Engine::OnRender()
-{
-    int width = GetWindow()->GetWidth();
-    int height = GetWindow()->GetHeight();
-    
-    // Матриці
-    glm::mat4 projection = glm::perspective(glm::radians(GetCamera()->GetZoom()), GetWindow()->GetAspectRatio(), 0.1f, 100.0f);
-    glm::mat4 view = GetCamera()->GetViewMatrix();
-    
-    mainShader->use();
-    mainShader->setMat4("projection", projection);
-    mainShader->setMat4("view", view);
-    // model matrix will be set per-object in SceneManager::RenderAll
-    mainShader->setVec3("viewPos", GetCamera()->GetPosition());
-    mainShader->setVec3("lightPos", lightPos);
-    mainShader->setFloat("height_scale", heightScale);
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, diffuseMap);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normalMap);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    
-    // primitives were created once during initialization or via the Create menu
-    // SceneManager will render all objects
-    GetSceneManager()->RenderAll(*mainShader);
-    
-    // Рендеринг позиції світла
-    // glm::mat4 lightModel = glm::mat4(1.0f);
-    // lightModel = glm::translate(lightModel, lightPos);
-    // lightModel = glm::scale(lightModel, glm::vec3(0.1f));
-    // mainShader->setMat4("model", lightModel);
-    // GetRenderer()->GetPrimitives()->RenderQuad();
-    
-    // Рендеринг скайбоксу
-    skybox->Render(*GetCamera(), projection);
-}
 
 void Engine::OnShutdown()
 {

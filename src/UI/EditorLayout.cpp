@@ -19,24 +19,6 @@ EditorLayout::EditorLayout()
     Logger::Log(LogLevel::INFO, "EditorLayout created with Framebuffer");
 }
 
-void EditorLayout::BeginFrame()
-{
-}
-
-void EditorLayout::EndFrame()
-{
-}
-
-ImVec2 EditorLayout::GetViewportSize() const
-{
-    return viewportSize;
-}
-
-ImVec2 EditorLayout::GetViewportPos() const
-{
-    return viewportPos;
-}
-
 void EditorLayout::RenderEditor(SceneManager* sceneManager, Camera* camera, Renderer* renderer,
                                 std::function<void()> onCreateCube)
 {
@@ -45,101 +27,52 @@ void EditorLayout::RenderEditor(SceneManager* sceneManager, Camera* camera, Rend
         Logger::Log(LogLevel::ERROR, "EditorLayout: nullptr passed to RenderEditor!");
         return;
     }
-    // Create a full-screen dockspace and initial layout on first use
-    ImGuiIO& io = ImGui::GetIO();
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-    ImGuiWindowFlags hostWindowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                                       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGui::SetNextWindowViewport(viewport->ID);
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::Begin("EditorDockHost", nullptr, hostWindowFlags);
-    ImGui::PopStyleVar(2);
-
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-    {
-        ImGuiID dockspace_id = ImGui::GetID("EditorDockSpace");
-
-        static bool dockInitialized = false;
-        if (!dockInitialized)
-        {
-            ImGui::DockBuilderRemoveNode(dockspace_id); // clear any previous layout
-            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
-
-            ImGuiID dock_main_id = dockspace_id;
-            ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
-            ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
-            ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
-
-            ImGui::DockBuilderDockWindow("Hierarchy", dock_left_id);
-            ImGui::DockBuilderDockWindow("Control Panel", dock_left_id);
-            ImGui::DockBuilderDockWindow("Inspector", dock_right_id);
-            ImGui::DockBuilderDockWindow("Scene Settings", dock_bottom_id);
-            ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
-            ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
-
-            ImGui::DockBuilderFinish(dockspace_id);
-            dockInitialized = true;
-            Logger::Log(LogLevel::INFO, "Dockspace initialized");
-        }
-
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f));
-    }
-
-    // Render child windows (they will be docked into the DockSpace)
+    
     RenderControlPanel(onCreateCube);
-
+    
     if (showHierarchy)
         RenderSceneHierarchy(sceneManager);
-
+    
     if (showInspector)
         RenderInspector();
-
+    
     if (showProperties)
         RenderProperties(camera, renderer);
-
+    
     if (showConsole)
         RenderConsole();
-
+    
     RenderViewport();
-
-    ImGui::End(); // EditorDockHost
 }
 
 void EditorLayout::RenderControlPanel(std::function<void()> onCreateCube)
 {
-    ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Control Panel", nullptr, panelFlags);
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(280, 150), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
+    ImGui::Begin("Control Panel");
     
     ImGui::Text("Scene Controls");
     ImGui::Separator();
     
     if (ImGui::Button("Create Cube", ImVec2(-1, 30)))
     {
-        Logger::Log(LogLevel::INFO, "Creating cube...");
         if (onCreateCube) 
             onCreateCube();
+
+        Logger::Log(LogLevel::INFO, "Cube was created");
     }
     
     if (ImGui::Button("Create Sphere", ImVec2(-1, 30)))
-    {
         Logger::Log(LogLevel::INFO, "Sphere not implemented yet");
-    }
     
     if (ImGui::Button("Clear Scene", ImVec2(-1, 30)))
-    {
         Logger::Log(LogLevel::INFO, "Clear not implemented yet");
-    }
     
     ImGui::Separator();
-    
+
     ImGui::Checkbox("Show Console", &showConsole);
     
     ImGui::End();
@@ -147,74 +80,63 @@ void EditorLayout::RenderControlPanel(std::function<void()> onCreateCube)
 
 void EditorLayout::RenderMenuBar(std::function<void()> onCreateCube)
 {
-    // Не використовуємо - замість цього використовуємо Control Panel
+    return;
 }
 
 void EditorLayout::RenderViewport()
 {
+    ImGui::SetNextWindowPos(ImVec2(300, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(800, 650), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Viewport", nullptr, viewportFlags);
+    ImGui::Begin("Game Viewport");
     
     isViewportHovered = ImGui::IsWindowHovered();
     isViewportFocused = ImGui::IsWindowFocused();
     
     ImVec2 windowSize = ImGui::GetContentRegionAvail();
     
-    static bool logged = false;
-    if (!logged)
-    {
-        Logger::Log(LogLevel::INFO, "Viewport window size: " + 
-            std::to_string((int)windowSize.x) + "x" + std::to_string((int)windowSize.y));
-        logged = true;
-    }
-    
-    if (windowSize.x != viewportSize.x || windowSize.y != viewportSize.y)
+    if ((windowSize.x != viewportSize.x || windowSize.y != viewportSize.y) && 
+        windowSize.x > 0 && windowSize.y > 0)
     {
         viewportSize = windowSize;
-        
-        if (viewportSize.x > 0 && viewportSize.y > 0)
-        {
-            framebuffer->Resize((int)viewportSize.x, (int)viewportSize.y);
-            Logger::Log(LogLevel::INFO, "Viewport resized to: " + 
-                std::to_string((int)viewportSize.x) + "x" + std::to_string((int)viewportSize.y));
-        }
+        framebuffer->Resize((int)viewportSize.x, (int)viewportSize.y);
+        Logger::Log(LogLevel::INFO, "Viewport resized: " + 
+            std::to_string((int)viewportSize.x) + "x" + std::to_string((int)viewportSize.y));
     }
     
     viewportPos = ImGui::GetCursorScreenPos();
     
     if (framebuffer)
     {
-        unsigned int texID = framebuffer->GetTextureID();
-        
-        ImGui::Image(
-            (void*)(intptr_t)texID,
-            windowSize,
-            ImVec2(0, 1),
-            ImVec2(1, 0)
-        );
+        unsigned int texID = framebuffer->GetTextureID();   
+        ImGui::Image((void*)(intptr_t)texID, windowSize, ImVec2(0, 1), ImVec2(1, 0)   );
     }
     else
-    {
-        Logger::Log(LogLevel::ERROR, "Framebuffer is null in RenderViewport!");
         ImGui::Text("Framebuffer Error!");
-    }
     
     ImGui::End();
     ImGui::PopStyleVar();
 }
 
-
 void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
 {
+    ImGuiWindowFlagSettings();
+    
     if (!sceneManager)
     {
         Logger::Log(LogLevel::ERROR, "SceneManager is null!");
         return;
     }
     
-    ImGuiWindowFlags hierarchyFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Hierarchy", &showHierarchy, hierarchyFlags);
+    ImGui::SetNextWindowPos(ImVec2(10, 170), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(280, 400), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
+    ImGui::Begin("Hierarchy", &showHierarchy);
     
     size_t objCount = sceneManager->GetObjectCount();
     ImGui::Text("Objects: %zu", objCount);
@@ -230,10 +152,7 @@ void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
             auto& objPtr = pair.second;
             
             if (!objPtr)
-            {
-                Logger::Log(LogLevel::WARNING, "Null object in scene!");
                 continue;
-            }
             
             SceneObject* obj = objPtr.get();
             
@@ -242,8 +161,8 @@ void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
             if (selectedObject == obj)
                 flags |= ImGuiTreeNodeFlags_Selected;
             
-            // Іконка + назва
-            ImGui::TreeNodeEx((void*)(intptr_t)id, flags, "[Cube] %s", obj->name.c_str());
+            std::string objInfo = obj->name + " [" + std::to_string(obj->objectID) + "]";
+            ImGui::TreeNodeEx((void*)(intptr_t)id, flags, objInfo.c_str());
             
             if (ImGui::IsItemClicked())
             {
@@ -251,7 +170,6 @@ void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
                 Logger::Log(LogLevel::INFO, "Selected: " + obj->name);
             }
             
-            // Правий клік - контекстне меню
             if (ImGui::BeginPopupContextItem())
             {
                 ImGui::Text("Object: %s", obj->name.c_str());
@@ -263,11 +181,6 @@ void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
                     sceneManager->RemoveObject(id);
                     if (selectedObject == obj)
                         selectedObject = nullptr;
-                }
-                
-                if (ImGui::MenuItem("Duplicate"))
-                {
-                    Logger::Log(LogLevel::INFO, "Duplicate not implemented");
                 }
                 
                 ImGui::EndPopup();
@@ -291,12 +204,15 @@ void EditorLayout::RenderSceneHierarchy(SceneManager* sceneManager)
 
 void EditorLayout::RenderInspector()
 {
-    ImGuiWindowFlags inspectorFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Inspector", &showInspector, inspectorFlags);
+    ImGui::SetNextWindowPos(ImVec2(1110, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 660), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
+    ImGui::Begin("Inspector", &showInspector);
     
     if (selectedObject)
     {
-        // Назва об'єкта
         ImGui::Text("Object");
         ImGui::Separator();
         
@@ -317,7 +233,6 @@ void EditorLayout::RenderInspector()
         ImGui::Spacing();
         ImGui::Separator();
         
-        // Transform
         if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
         {
             glm::vec3 pos = selectedObject->transform.GetPosition();
@@ -343,7 +258,6 @@ void EditorLayout::RenderInspector()
         
         ImGui::Separator();
         
-        // Mesh Info
         if (ImGui::CollapsingHeader("Mesh Renderer"))
         {
             ImGui::BulletText("Type: Cube");
@@ -351,20 +265,17 @@ void EditorLayout::RenderInspector()
             ImGui::BulletText("Triangles: 12");
         }
         
-        // Material
         if (ImGui::CollapsingHeader("Material"))
         {
-            ImGui::BulletText("Shader: parallax");
+            ImGui::BulletText("Shader: basic");
             ImGui::BulletText("Diffuse: bricks2.jpg");
-            ImGui::BulletText("Normal: bricks2_normal.jpg");
-            ImGui::BulletText("Height: bricks2_disp.jpg");
         }
     }
     else
     {
         ImGui::TextDisabled("No object selected");
         ImGui::Separator();
-        ImGui::TextWrapped("Select an object from the Hierarchy panel");
+        ImGui::TextWrapped("Select an object from Hierarchy");
     }
     
     ImGui::End();
@@ -373,13 +284,14 @@ void EditorLayout::RenderInspector()
 void EditorLayout::RenderProperties(Camera* camera, Renderer* renderer)
 {
     if (!camera || !renderer)
-    {
-        Logger::Log(LogLevel::ERROR, "Null camera or renderer!");
         return;
-    }
     
-    ImGuiWindowFlags propertiesFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Scene Settings", &showProperties, propertiesFlags);
+    ImGui::SetNextWindowPos(ImVec2(10, 580), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(280, 250), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
+    ImGui::Begin("Scene Settings", &showProperties);
     
     if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -414,8 +326,12 @@ void EditorLayout::RenderProperties(Camera* camera, Renderer* renderer)
 
 void EditorLayout::RenderConsole()
 {
-    ImGuiWindowFlags consoleFlags = ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Console", &showConsole, consoleFlags);
+    ImGui::SetNextWindowPos(ImVec2(300, 670), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(800, 120), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlagSettings();
+    
+    ImGui::Begin("Console", &showConsole);
     
     ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "[INFO] Application started");
     ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "[SUCCESS] Scene initialized");
@@ -423,4 +339,9 @@ void EditorLayout::RenderConsole()
     ImGui::Text("Ready.");
     
     ImGui::End();
+}
+
+void EditorLayout::ImGuiWindowFlagSettings() 
+{
+//ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 }

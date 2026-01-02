@@ -27,11 +27,9 @@ void Framebuffer::Invalidate()
         Logger::Log(LogLevel::INFO, "Deleted old framebuffer");
     }
     
-    // Створюємо Framebuffer
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     
-    // Створюємо текстуру для кольору
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -43,18 +41,14 @@ void Framebuffer::Invalidate()
     
     Logger::Log(LogLevel::INFO, "Created texture: ID=" + std::to_string(textureID));
     
-    // Створюємо Renderbuffer для depth/stencil
     glGenRenderbuffers(1, &RBO);
     glBindRenderbuffer(GL_RENDERBUFFER, RBO);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
     
-    // Перевіряємо статус
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
         Logger::Log(LogLevel::ERROR, "Framebuffer is not complete! Status: " + std::to_string(status));
-    }
     else
     {
         Logger::Log(LogLevel::INFO, "Framebuffer created successfully: " + 
