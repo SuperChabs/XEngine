@@ -1,9 +1,9 @@
 #ifndef SKYBOX_H
 #define SKYBOX_H
 
-#include "rendering/buffer.h"
-#include "core/shader.h"
-#include "core/camera.h"
+#include "rendering/Buffer.h"
+#include "core/Shader.h"
+#include "core/Camera.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>

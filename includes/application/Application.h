@@ -9,6 +9,7 @@
 #include "rendering/Renderer.h"
 #include "rendering/TextureManager.h"
 #include "scene/SceneManager.h"
+#include "utils/Logger.h"
 
 #include <memory>
 
@@ -24,6 +25,8 @@ private:
     std::unique_ptr<SceneManager> sceneManager;
     std::unique_ptr<ImGuiManager> imGuiManager;
     
+    ConsoleLogger console;
+
     bool isRunning;
     bool showUI;
     

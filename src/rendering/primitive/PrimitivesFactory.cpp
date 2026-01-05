@@ -1,6 +1,6 @@
 #include "rendering/primitive/PrimitivesFactory.h"
 #include "rendering/primitive/PrimitiveGenerator.h"
-#include "scene/mesh.h"
+#include "scene/Mesh.h"
 
 #include <memory>
 #include <utility>

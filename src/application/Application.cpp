@@ -61,11 +61,13 @@ bool Application::Initialize()
     if (!imGuiManager->Initialize(window->GetGLFWWindow())) 
         return false;
 
-    SetCameraControlMode(false);    
+    SetCameraControlMode(false);  
     
-    Logger::Log(LogLevel::INFO, "Application initialized successfully");
+    Logger::AddSink(&console);
     
     OnInitialize();
+
+    Logger::Log(LogLevel::INFO, "Application initialized successfully");
     
     return true;
 }
