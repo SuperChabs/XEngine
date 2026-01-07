@@ -26,18 +26,16 @@ void Model::Draw(Shader &shader) {
         mesh.Draw(shader);
 }
 
-void Model::SetColor(const glm::vec3& color) {
+void Model::SetColor(const glm::vec3& color) 
+{
     for (auto& mesh : meshes)
         mesh.SetColor(color);
 }
 
-void Model::SetTextures(const std::vector<Texture>& textures) {
+void Model::SetTextures(const std::vector<Texture>& textures) 
+{
     for (auto& mesh : meshes)
         mesh.SetTextures(textures);
-}
-
-size_t Model::getMeshCount() const {
-    return meshes.size();
 }
 
 void Model::loadModel(const std::string& path) {

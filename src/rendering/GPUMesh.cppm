@@ -1,15 +1,16 @@
 module;
 
-#include <vector>
 #include <memory>
 #include <cstddef>
+#include <vector>
 
 #include <glad/glad.h>
 
 export module XEngine.Rendering.GPUMesh;
 
 import XEngine.Rendering.Buffer;    
-import XEngine.Rendering.MeshData;  
+import XEngine.Rendering.MeshData; 
+import XEngine.Core.Logger;
 
 export class GPUMesh
 {
@@ -28,6 +29,10 @@ public:
         usedIndices = true;
         indexCount = indices.size();
 
+        Logger::Log(LogLevel::INFO, "GPUMesh created with " + 
+            std::to_string(vertices.size()) + " vertices and " + 
+            std::to_string(indexCount) + " indices");
+
         VAO = std::make_unique<VertexArray>();
         VBO = std::make_unique<VertexBuffer>();
         EBO = std::make_unique<IndexBuffer>();
@@ -40,7 +45,6 @@ public:
         EBO->Bind();
         EBO->SetData(indices.data(), static_cast<unsigned int>(indices.size()), GL_STATIC_DRAW);
 
-        // Атрибути вершин
         VAO->AddAttribute(0, 3, GL_FLOAT, false, sizeof(Vertex), 0);                          // Position
         VAO->AddAttribute(1, 3, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, Normal));   // Normal
         VAO->AddAttribute(2, 2, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, TexCoords));// TexCoords
@@ -48,12 +52,17 @@ public:
         VAO->AddAttribute(4, 3, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, Bitangent));// Bitangent
 
         VAO->Unbind();
+
+        Logger::Log(LogLevel::INFO, "GPUMesh attributes configured successfully");
     }
 
     GPUMesh(const float* data, size_t dataSize, int stride)
     {
         usedIndices = false;
         vertexCount = dataSize / (stride * sizeof(float));
+
+        Logger::Log(LogLevel::INFO, "GPUMesh created from raw data: " + 
+            std::to_string(vertexCount) + " vertices, stride=" + std::to_string(stride));
 
         VAO = std::make_unique<VertexArray>();
         VBO = std::make_unique<VertexBuffer>();
@@ -77,6 +86,6 @@ public:
             glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, 0);
         else
             glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));
-        VAO->Unbind();
+        VAO->Unbind(); 
     }
 };

@@ -10,6 +10,7 @@ export module XEngine.Rendering.Material;
 
 import XEngine.Rendering.MeshData; 
 import XEngine.Core.Shader;   
+import XEngine.Core.Logger;
 
 export class Material
 {
@@ -21,10 +22,30 @@ private:
 
 public:
     Material(const std::vector<Texture>& textures)
-        : textures(textures), useColor(false) {}
+        : textures(textures), useColor(false), color(1.0f, 1.0f, 1.0f) 
+    {
+        if (textures.empty()) 
+        {
+            useColor = true;
+            color = glm::vec3(1.0f, 1.0f, 1.0f);
+            Logger::Log(LogLevel::WARNING, "Material created with white color (no textures)");
+        } else 
+        { 
+            useColor = false;
+            Logger::Log(LogLevel::INFO, "Material created with " + std::to_string(textures.size()) + " textures");
+        }
+            
+        
+    }
 
     Material(const glm::vec3& solidColor)
-        : color(solidColor), useColor(true) {}
+        : color(solidColor), useColor(true) 
+    {
+        Logger::Log(LogLevel::INFO, "Material created with color: (" + 
+            std::to_string(color.r) + ", " + 
+            std::to_string(color.g) + ", " + 
+            std::to_string(color.b) + ")");
+    }
 
     Material& operator= (Material& other)
     {
@@ -41,12 +62,30 @@ public:
 
     void Bind(Shader& shader)
     {
+        shader.use();
+
+        static int frameCount = 0;
+        if (frameCount % 60 == 0) 
+            Logger::Log(LogLevel::DEBUG, "Material::Bind() - useColor: " + std::to_string(useColor));
+        frameCount++;
+
         shader.setBool("useColor", useColor);
 
         if (useColor)
-            shader.setVec3("Material.color", color);
+        {
+            if (frameCount % 60 == 0) 
+                Logger::Log(LogLevel::DEBUG, "Setting color: (" + 
+                    std::to_string(color.r) + ", " + 
+                    std::to_string(color.g) + ", " + 
+                    std::to_string(color.b) + ")");
+            
+            shader.setVec3("material.color", color);
+        }
         else
         {
+            if (frameCount % 60 == 0)
+                Logger::Log(LogLevel::DEBUG, "Binding " + std::to_string(textures.size()) + " textures");
+
             unsigned int diffuseNr = 1;
             unsigned int specularNr = 1;
             unsigned int normalNr = 1;
@@ -64,7 +103,7 @@ public:
                 else if (name == "texture_normal") number = std::to_string(normalNr++);
                 else if (name == "texture_height") number = std::to_string(heightNr++);
 
-                shader.setInt(("Material." + name + number).c_str(), i);
+                shader.setInt(("material." + name + number).c_str(), i);
                 glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
 
@@ -82,7 +121,16 @@ public:
         glActiveTexture(GL_TEXTURE0);
     }
 
-    void SetColor(glm::vec3 newColor) { color = newColor; }
+    void SetColor(glm::vec3 newColor) 
+    { 
+        color = newColor; 
+        useColor = true;
+        Logger::Log(LogLevel::INFO, "Material color changed to: (" + 
+            std::to_string(color.r) + ", " + 
+            std::to_string(color.g) + ", " + 
+            std::to_string(color.b) + ")");
+    }
+
     void SetTextures(std::vector<Texture> newTextures) { textures = newTextures; }
     void SetColorUsing(bool newUsing) { useColor = newUsing; }
 

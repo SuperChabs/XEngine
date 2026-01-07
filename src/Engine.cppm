@@ -12,12 +12,14 @@ module;
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include <functional>
 
 export module XEngine.Engine;
 
 import XEngine.Application.Application;
 import XEngine.Core.Shader;
 import XEngine.Core.Input;
+import XEngine.Core.CommandManager;
 import XEngine.Rendering.Skybox;
 import XEngine.Rendering.Framebuffer;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
@@ -35,10 +37,6 @@ private:
     std::unique_ptr<Skybox> skybox;
 
     std::unique_ptr<EditorLayout> editorLayout;
-    
-    
-    glm::vec3 lightPos;
-    float heightScale;
 
     SceneObject* gameObject = nullptr;
     bool gameAutoRotate = false;
@@ -55,6 +53,8 @@ protected:
         mainShader = std::make_unique<Shader>("basic");
         skyboxShader = std::make_unique<Shader>("skybox"); 
 
+        GetMaterialManager()->CreateColorMaterial("orange", glm::vec3(1.0f, 0.5f, 0.0f));
+
         std::vector<std::string> faces = 
         {
             "assets/textures/skybox1/right.png",
@@ -68,6 +68,29 @@ protected:
         unsigned int cubemapTexture = GetTextureManager()->LoadCubemap(faces);
         skybox = std::make_unique<Skybox>(cubemapTexture, skyboxShader.get());
         
+        CommandManager::RegisterCommand("onCreateCube",
+        [this]() 
+        {
+            Mesh* gameMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+            if (gameMesh)
+            {
+                auto material = GetMaterialManager()->GetMaterial("gray");
+                gameMesh->SetMaterial(material);
+
+                std::unique_ptr<Model> gameModel = std::make_unique<Model>(gameMesh, "Cube");
+                SceneObject* newObj = GetSceneManager()->AddObject("Cube", std::move(gameModel));
+                objectParams[newObj->objectID] = ObjectParams();
+                Logger::Log(LogLevel::INFO, "Cube created with ID: " + std::to_string(newObj->objectID));
+            }
+        });
+
+        CommandManager::RegisterCommand("onExit",
+        [this]() 
+        {
+            Logger::Log(LogLevel::INFO, "Exit requested from menu");
+            Stop();
+        });
+
         Logger::Log(LogLevel::INFO, "Creating EditorLayout...");
         editorLayout = std::make_unique<EditorLayout>();
         
@@ -84,21 +107,6 @@ protected:
 
     void OnUpdate(float deltaTime) override
     {
-        if (GetInput()->IsKeyPressed(XKey::KEY_Q))
-        {
-            if (heightScale > 0.0f)
-                heightScale -= 0.5f * deltaTime;
-            else
-                heightScale = 0.0f;
-        }
-        else if (GetInput()->IsKeyPressed(XKey::KEY_E))
-        {
-            if (heightScale < 1.0f)
-                heightScale += 0.5f * deltaTime;
-            else
-                heightScale = 1.0f;
-        }
-
         if (GetSceneManager()->GetObjectCount() > 0 && gameObject)
         {
             for (const auto& [id, obj] : GetSceneManager()->GetObjects()) 
@@ -135,9 +143,21 @@ protected:
                 glm::mat4 view = GetCamera()->GetViewMatrix();
                 
                 mainShader->use();
+
+                GLint currentProgram;
+                glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
+                if (currentProgram != mainShader->ID) 
+                    Logger::Log(LogLevel::ERROR, "Shader not active!");
+                
                 mainShader->setMat4("projection", projection);
                 mainShader->setMat4("view", view);
                 mainShader->setVec3("viewPos", GetCamera()->GetPosition());
+                
+                static int frameCount = 0;
+                if (frameCount % 60 == 0) 
+                    Logger::Log(LogLevel::DEBUG, "Rendering " + 
+                        std::to_string(GetSceneManager()->GetObjectCount()) + " objects");
+                frameCount++; 
                 
                 GetSceneManager()->RenderAll(*mainShader);
                 skybox->Render(*GetCamera(), projection);
@@ -148,7 +168,7 @@ protected:
         
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, GetWindow()->GetWidth(), GetWindow()->GetHeight());
-        glClearColor(0.15f, 0.15f, 0.15f, 1.0f);  // Темно-сірий фон
+        glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
     }
@@ -172,29 +192,7 @@ protected:
             return;
         }
 
-        editorLayout->RenderEditor(
-            GetSceneManager(),
-            GetCamera(),
-            GetRenderer(),
-            [this]() 
-            {
-                Mesh* gameMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
-                if (gameMesh)
-                {
-                    gameMesh->SetMaterial(GetMaterialManager()->GetMaterial("default"));
-                    std::unique_ptr<Model> gameModel = std::make_unique<Model>(gameMesh, "Cube");
-                    SceneObject* newObj = GetSceneManager()->AddObject("Cube", std::move(gameModel));
-                    objectParams[newObj->objectID] = ObjectParams();
-                    Logger::Log(LogLevel::INFO, "Cube created with ID: " + std::to_string(newObj->objectID));
-                }
-            },
-
-            [this]() 
-            {
-                Logger::Log(LogLevel::INFO, "Exit requested from menu");
-                Stop();
-            }
-        );
+        editorLayout->RenderEditor( GetSceneManager(), GetCamera(), GetRenderer());
     }
 
 public:

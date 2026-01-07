@@ -28,29 +28,22 @@ uniform bool useColor;
 
 void main()
 {
-    // vec3 baseColor;
+    vec3 baseColor;
     
-    // if (useColor)
-        // baseColor = material.color;
-    // else
-        // baseColor = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
+    if (useColor) 
+        baseColor = material.color;
+    else 
+        baseColor = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
     
-    // vec3 norm = normalize(fs_in.Normal);
-    // vec3 lightDir = normalize(lightPos - fs_in.FragPos);
+    vec3 ambient = 0.6 * baseColor;
     
-    // Ambient
-    // vec3 ambient = 0.3 * baseColor;
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0)); 
+    vec3 norm = normalize(fs_in.Normal);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * baseColor * 0.4;
     
-    // Diffuse
-    // float diff = max(dot(norm, lightDir), 0.0);
-    // vec3 diffuse = diff * baseColor;
-    
-    // Specular
-    // vec3 viewDir = normalize(viewPos - fs_in.FragPos);
-    // vec3 reflectDir = reflect(-lightDir, norm);
-    // float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    // vec3 specular = 0.5 * spec * vec3(1.0);
-    
-    // vec3 result = ambient + diffuse + specular;
-    FragColor = vec4(material.color, 1.0);
+    vec3 result = ambient + diffuse;
+    FragColor = vec4(result, 1.0);
+
+    // FragColor = vec4(vec3(1.0, 0.0, 1.0), 1.0);
 }

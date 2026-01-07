@@ -40,7 +40,25 @@ public:
         material->Unbind();
     }
 
-    void SetColor(const glm::vec3& color) { material->SetColor(color); }
-    void SetTextures(const std::vector<Texture>& textures) { material->SetTextures(textures); }
-    void SetMaterial(std::shared_ptr<Material> newMaterial) { material = newMaterial; }
+    void SetColor(const glm::vec3& color) 
+    { 
+        if (material)
+        { 
+            material->SetColor(color); 
+            material->SetColorUsing(true);
+        }
+    }
+    void SetTextures(const std::vector<Texture>& textures) 
+    { 
+        if (material)
+        {
+            material->SetTextures(textures); 
+            material->SetColorUsing(false);
+        }
+    }
+
+    void SetMaterial(std::shared_ptr<Material> newMaterial) 
+    { 
+        material = newMaterial; 
+    }
 };

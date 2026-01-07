@@ -1,9 +1,10 @@
 module;
 
 #include <string>
-#include <vector>
 #include <memory>
 #include <utility>
+
+#include <glm/glm.hpp>
 
 export module XEngine.Rendering.Primitive.PrimitivesFactory;
 
@@ -38,7 +39,7 @@ public:
                 const float* data = PrimitiveGenerator::GetCubeData(dataSize);
 
                 auto gpuMesh = std::make_unique<GPUMesh>(data, dataSize, 8);
-                auto material = std::make_unique<Material>(std::vector<Texture>{});
+                auto material = std::make_unique<Material>(glm::vec3(1.0f, 0.0f, 1.0f));
 
                 auto mesh = std::make_unique<Mesh>(gpuMesh.release(), material.release());
                 return mesh.release();
@@ -49,7 +50,7 @@ public:
                 const float* data = PrimitiveGenerator::GetQuadData(dataSize);
 
                 auto gpuMesh = std::make_unique<GPUMesh>(data, dataSize, 8);
-                auto material = std::make_unique<Material>(std::vector<Texture>{});
+                auto material = std::make_unique<Material>(glm::vec3(1.0f, 1.0f, 1.0f));
 
                 auto mesh = std::make_unique<Mesh>(gpuMesh.release(), material.release());
                 return mesh.release();
@@ -60,7 +61,7 @@ public:
                 const float* data = PrimitiveGenerator::GetPlaneData(dataSize);
 
                 auto gpuMesh = std::make_unique<GPUMesh>(data, dataSize, 8);
-                auto material = std::make_unique<Material>(std::vector<Texture>{});
+                auto material = std::make_unique<Material>(glm::vec3(1.0f, 1.0f, 1.0f));
 
                 auto mesh = std::make_unique<Mesh>(gpuMesh.release(), material.release());
                 return mesh.release();

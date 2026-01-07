@@ -4,18 +4,18 @@ module;
 
 #include <imgui.h>
 
-#include <functional>
-#include <memory>
 #include <string>
 #include <cstring>
+#include <memory>
 
 export module XEngine.UI.EditorLayout;
 
 import XEngine.Scene.SceneManager;
 import XEngine.Core.Camera;
+import XEngine.Core.Logger;
+import XEngine.Core.CommandManager;
 import XEngine.Rendering.Renderer;
 import XEngine.Rendering.Framebuffer;
-import XEngine.Core.Logger;
 import XEngine.UI.Theme; 
 
 export class EditorLayout
@@ -37,11 +37,7 @@ public:
             "EditorLayout created with Framebuffer");
     }
 
-    void RenderEditor(SceneManager* sceneManager,
-                      Camera* camera,
-                      Renderer* renderer,
-                      std::function<void()> onCreateCube,
-                      std::function<void()> onExit)
+    void RenderEditor(SceneManager* sceneManager, Camera* camera, Renderer* renderer)
     {
         if (!sceneManager || !camera || !renderer)
         {
@@ -74,7 +70,8 @@ public:
             if (ImGui::BeginMenu("File"))
             {
                 if (ImGui::MenuItem("Exit"))
-                    if(onExit) onExit();
+                    if(CommandManager::HasCommand("onExit")) 
+                        CommandManager::ExecuteCommand("onExit");
                     
                 ImGui::EndMenu();
             }
@@ -82,13 +79,12 @@ public:
             if (ImGui::BeginMenu("Create"))
             {
                 if (ImGui::MenuItem("Cube"))
-                {
-                    if (onCreateCube) onCreateCube();
-                }
+                    if(CommandManager::HasCommand("onCreateCube")) 
+                        CommandManager::ExecuteCommand("onCreateCube");
+                
                 if (ImGui::MenuItem("Sphere"))
-                {
                     Logger::Log(LogLevel::INFO, "Sphere not implemented");
-                }
+                
                 ImGui::EndMenu();
             }
 
@@ -101,53 +97,53 @@ public:
                 ImGui::EndMenu();
             }
 
-        if (ImGui::BeginMenu("Window"))
-        {
-            ImGui::MenuItem("Hierarchy", nullptr, &showHierarchy);
-            ImGui::MenuItem("Inspector", nullptr, &showInspector);
-            ImGui::MenuItem("Properties", nullptr, &showProperties);
-            ImGui::MenuItem("Console", nullptr, &showConsole);
-            
-            ImGui::Separator();
-            
-            if (ImGui::BeginMenu("Theme"))
+            if (ImGui::BeginMenu("Window"))
             {
-                if (ImGui::MenuItem("Dark")) 
-                    Theme::ApplyTheme(ThemeStyle::Dark);
-                if (ImGui::MenuItem("Light")) 
-                    Theme::ApplyTheme(ThemeStyle::Light);
+                ImGui::MenuItem("Hierarchy", nullptr, &showHierarchy);
+                ImGui::MenuItem("Inspector", nullptr, &showInspector);
+                ImGui::MenuItem("Properties", nullptr, &showProperties);
+                ImGui::MenuItem("Console", nullptr, &showConsole);
                 
                 ImGui::Separator();
                 
-                if (ImGui::MenuItem("Custom")) 
-                    Theme::ApplyTheme(ThemeStyle::Custom);
-                if (ImGui::MenuItem("Red Accent"))
-                    Theme::ApplyTheme(ThemeStyle::RedAccent);
-                if (ImGui::MenuItem("Enemymouse (Cyan)"))
-                    Theme::ApplyTheme(ThemeStyle::Enemymouse);
-                if (ImGui::MenuItem("Adobe Spectrum"))
-                    Theme::ApplyTheme(ThemeStyle::AdobeSpectrum);
-                if (ImGui::MenuItem("LED Synthmaster (Green)"))   
-                    Theme::ApplyTheme(ThemeStyle::LedSynthmaster);
-                if (ImGui::MenuItem("Dougbinks Light"))          
-                    Theme::ApplyTheme(ThemeStyle::DougbinksLight);
-                if (ImGui::MenuItem("Dougbinks Dark"))             
-                    Theme::ApplyTheme(ThemeStyle::DougbinksDark);
-                
-                ImGui::Separator();
-                
-                if (ImGui::MenuItem("Unreal Engine")) 
-                    Theme::ApplyTheme(ThemeStyle::UnrealEngine);
-                if (ImGui::MenuItem("Unity")) 
-                    Theme::ApplyTheme(ThemeStyle::Unity);
-                if (ImGui::MenuItem("Visual Studio")) 
-                    Theme::ApplyTheme(ThemeStyle::VisualStudio);
+                if (ImGui::BeginMenu("Theme"))
+                {
+                    if (ImGui::MenuItem("Dark")) 
+                        Theme::ApplyTheme(ThemeStyle::Dark);
+                    if (ImGui::MenuItem("Light")) 
+                        Theme::ApplyTheme(ThemeStyle::Light);
+                    
+                    ImGui::Separator();
+                    
+                    if (ImGui::MenuItem("Custom")) 
+                        Theme::ApplyTheme(ThemeStyle::Custom);
+                    if (ImGui::MenuItem("Red Accent"))
+                        Theme::ApplyTheme(ThemeStyle::RedAccent);
+                    if (ImGui::MenuItem("Enemymouse (Cyan)"))
+                        Theme::ApplyTheme(ThemeStyle::Enemymouse);
+                    if (ImGui::MenuItem("Adobe Spectrum"))
+                        Theme::ApplyTheme(ThemeStyle::AdobeSpectrum);
+                    if (ImGui::MenuItem("LED Synthmaster (Green)"))   
+                        Theme::ApplyTheme(ThemeStyle::LedSynthmaster);
+                    if (ImGui::MenuItem("Dougbinks Light"))          
+                        Theme::ApplyTheme(ThemeStyle::DougbinksLight);
+                    if (ImGui::MenuItem("Dougbinks Dark"))             
+                        Theme::ApplyTheme(ThemeStyle::DougbinksDark);
+                    
+                    ImGui::Separator();
+                    
+                    if (ImGui::MenuItem("Unreal Engine")) 
+                        Theme::ApplyTheme(ThemeStyle::UnrealEngine);
+                    if (ImGui::MenuItem("Unity")) 
+                        Theme::ApplyTheme(ThemeStyle::Unity);
+                    if (ImGui::MenuItem("Visual Studio")) 
+                        Theme::ApplyTheme(ThemeStyle::VisualStudio);
+                    
+                    ImGui::EndMenu();
+                }
                 
                 ImGui::EndMenu();
             }
-            
-            ImGui::EndMenu();
-        }
 
             ImGui::EndMenuBar();
         }
@@ -187,6 +183,8 @@ private:
     bool   isViewportFocused;
 
     std::unique_ptr<Framebuffer> framebuffer;
+
+    std::vector<std::function<void()>> editorFunctions;
 
     // ───── UI blocks ─────
 
