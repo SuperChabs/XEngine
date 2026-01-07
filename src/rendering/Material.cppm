@@ -26,14 +26,25 @@ public:
     Material(const glm::vec3& solidColor)
         : color(solidColor), useColor(true) {}
 
+    Material& operator= (Material& other)
+    {
+        if (this == &other) 
+            return *this;
+        
+        this->name = other.name;
+        this->color = other.color;
+        this->textures = other.textures;
+        this->useColor = other.useColor;
+
+        return *this;
+    }
+
     void Bind(Shader& shader)
     {
         shader.setBool("useColor", useColor);
 
         if (useColor)
-        {
             shader.setVec3("Material.color", color);
-        }
         else
         {
             unsigned int diffuseNr = 1;
@@ -47,6 +58,7 @@ public:
 
                 std::string number;
                 std::string name = textures[i].type;
+
                 if (name == "texture_diffuse") number = std::to_string(diffuseNr++);
                 else if (name == "texture_specular") number = std::to_string(specularNr++);
                 else if (name == "texture_normal") number = std::to_string(normalNr++);
@@ -70,12 +82,10 @@ public:
         glActiveTexture(GL_TEXTURE0);
     }
 
-    // Сеттери
     void SetColor(glm::vec3 newColor) { color = newColor; }
     void SetTextures(std::vector<Texture> newTextures) { textures = newTextures; }
     void SetColorUsing(bool newUsing) { useColor = newUsing; }
 
-    // Геттери
     const std::vector<Texture>& GetTextures() const { return textures; }
     size_t GetTextureCount() const { return textures.size(); }
     glm::vec3 GetColor() const { return color; }

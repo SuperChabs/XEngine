@@ -23,6 +23,7 @@ export enum class LogCategory
 {
     CORE,
     RENDERING,
+    UI,
     OTHER
 };
 

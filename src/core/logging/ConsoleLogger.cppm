@@ -62,6 +62,7 @@ static const char* levelToString(LogLevel lvl)
         {
             case LogCategory::CORE:      return "CORE";
             case LogCategory::RENDERING: return "RENDERING";
+            case LogCategory::UI:        return "UI";
             case LogCategory::OTHER:     return "OTHER";
             default:                     return "UNKNOWN";
         }

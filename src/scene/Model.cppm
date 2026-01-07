@@ -4,6 +4,10 @@ module;
 #include <string>
 #include <glm/glm.hpp>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 export module XEngine.Scene.Model;
 
 import XEngine.Scene.Mesh;
@@ -17,10 +21,9 @@ private:
     std::vector<Texture> textures_loaded;
     std::string directory;
 
-    // Приватні методи (реалізація в .cpp)
     void loadModel(const std::string& path);
-    void processNode(void* node, const void* scene);  // void* щоб не включати assimp
-    Mesh processMesh(void* mesh, const void* scene);
+    void processNode(aiNode* node, const aiScene* scene);
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
     std::vector<Texture> loadMaterialTextures(void* mat, int type, const std::string& typeName);
 
 public:
@@ -35,10 +38,11 @@ public:
     }
 
     void Draw(Shader &shader);
+
     void SetColor(const glm::vec3& color);
     void SetTextures(const std::vector<Texture>& textures);
+    
     size_t getMeshCount() const;
 };
 
-// Допоміжна функція
 unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = false);

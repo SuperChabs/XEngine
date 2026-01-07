@@ -1,25 +1,25 @@
 module;
 
-// Assimp тільки тут
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/mesh.h>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <stb_image.h>
 
 #include <vector>
-#include <memory>
+//#include <memory>
 #include <string>
-#include <utility>
+//#include <utility>
 
 module XEngine.Scene.Model;
 
 import XEngine.Scene.Mesh;
 import XEngine.Rendering.MeshData;
 import XEngine.Core.Shader;
-// import XEngine.Core.Logger;  
+import XEngine.Core.Logger;  
 
 void Model::Draw(Shader &shader) {
     for (auto& mesh : meshes)
@@ -45,7 +45,6 @@ void Model::loadModel(const std::string& path) {
     const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate);
     
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        // Logger error
         return;
     }
     
@@ -53,7 +52,7 @@ void Model::loadModel(const std::string& path) {
     processNode(scene->mRootNode, scene);
 }
 
-void Model::processNode(void* nodePtr, const void* scenePtr) {
+void Model::processNode(aiNode* nodePtr, const aiScene* scenePtr) {
     aiNode* node = static_cast<aiNode*>(nodePtr);
     const aiScene* scene = static_cast<const aiScene*>(scenePtr);
     
@@ -67,7 +66,7 @@ void Model::processNode(void* nodePtr, const void* scenePtr) {
     }
 }
 
-Mesh Model::processMesh(void* meshPtr, const void* scenePtr) {
+Mesh Model::processMesh(aiMesh* meshPtr, const aiScene* scenePtr) {
     aiMesh* mesh = static_cast<aiMesh*>(meshPtr);
     const aiScene* scene = static_cast<const aiScene*>(scenePtr);
     

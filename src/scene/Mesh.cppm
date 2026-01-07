@@ -4,7 +4,6 @@ module;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <string>
 #include <vector>
 #include <memory>
 
@@ -19,7 +18,7 @@ export class Mesh
 {
 private:
     std::unique_ptr<GPUMesh> gpuMesh;
-    std::unique_ptr<Material> material;
+    std::shared_ptr<Material> material;
 
 public:
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
@@ -43,4 +42,5 @@ public:
 
     void SetColor(const glm::vec3& color) { material->SetColor(color); }
     void SetTextures(const std::vector<Texture>& textures) { material->SetTextures(textures); }
+    void SetMaterial(std::shared_ptr<Material> newMaterial) { material = newMaterial; }
 };

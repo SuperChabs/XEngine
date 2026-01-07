@@ -9,6 +9,7 @@ module;
 export module XEngine.Core.ImGuiManager;
 
 import XEngine.Core.Logger;
+import XEngine.UI.Theme; 
 
 export class ImGuiManager 
 {
@@ -29,8 +30,17 @@ public:
         ImGuiIO& io = ImGui::GetIO();
         
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Multi-Viewport
         
-        ImGui::StyleColorsDark();
+        Theme::ApplyTheme(ThemeStyle::Custom);
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            style.WindowRounding = 0.0f;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+        }
         
         const char* glsl_version = "#version 330"; 
         ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -47,11 +57,20 @@ public:
         if (!initialized) 
             return;
         
+        Logger::Log(LogLevel::INFO, "ImGui shutdown started..."); 
+        
+        Logger::Log(LogLevel::INFO, "Shutting down viewports...");
+        ImGui::DestroyPlatformWindows();
+        
+        Logger::Log(LogLevel::INFO, "Shutting down ImGui backends...");
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
+        
+        Logger::Log(LogLevel::INFO, "Destroying ImGui context...");
         ImGui::DestroyContext();
         
         initialized = false;
+        
         Logger::Log(LogLevel::INFO, "ImGui shutdown completed");
     }
     
@@ -72,6 +91,15 @@ public:
         
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
     }
     
     bool IsInitialized() const { return initialized; }

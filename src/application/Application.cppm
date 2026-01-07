@@ -5,6 +5,7 @@ module;
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <utility>
 
 export module XEngine.Application.Application;
 
@@ -13,11 +14,13 @@ import XEngine.Core.Input;
 import XEngine.Core.Time;
 import XEngine.Core.Camera;
 import XEngine.Core.ImGuiManager;
-import XEngine.Rendering.Renderer;
-import XEngine.Rendering.TextureManager;
-import XEngine.Scene.SceneManager;
 import XEngine.Core.Logger;
 import XEngine.Core.Logging.ConsoleLogger;
+import XEngine.Rendering.Renderer;
+import XEngine.Rendering.TextureManager;
+import XEngine.Rendering.MaterialManager;
+import XEngine.Scene.SceneManager;
+
 
 export class Application 
 {
@@ -30,6 +33,7 @@ private:
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<SceneManager> sceneManager;
     std::unique_ptr<ImGuiManager> imGuiManager;
+    std::unique_ptr<MaterialManager> materialManager;
     
     ConsoleLogger console;
 
@@ -192,6 +196,7 @@ public:
         textureManager = std::make_unique<TextureManager>();
         sceneManager = std::make_unique<SceneManager>();
         imGuiManager = std::make_unique<ImGuiManager>();
+        materialManager = std::make_unique<MaterialManager>(textureManager.get());
         
         renderer->Initialize();
         
@@ -234,6 +239,12 @@ public:
     {
         OnShutdown();
 
+        if (imGuiManager)
+        {
+            imGuiManager->Shutdown();
+            imGuiManager.reset();
+        }        
+
         Logger::RemoveSink(&console);
         
         Logger::Log(LogLevel::INFO, "Application shutdown complete");
@@ -252,4 +263,5 @@ public:
     SceneManager* GetSceneManager() const { return sceneManager.get(); }
     TextureManager* GetTextureManager() const { return textureManager.get(); }
     ImGuiManager* GetImGuiManager() const { return imGuiManager.get(); }
+    MaterialManager* GetMaterialManager() const { return materialManager.get(); }
 };
