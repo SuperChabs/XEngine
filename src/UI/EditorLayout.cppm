@@ -364,7 +364,7 @@ private:
 
             ImGui::Separator();
 
-            glm::vec3 color;
+            glm::vec3 color = selectedObject->model->GetMesh(0)->GetColor();
             if (ImGui::ColorEdit3("SetColor", &color[0]))
                 CommandManager::ExecuteCommand("onChangeMeshColor", {color});
 
@@ -372,7 +372,7 @@ private:
 
             if (ImGui::CollapsingHeader("Fun Functions"))
             {
-                ImGui::Text("there is no functional :(");
+                ImGui::Text("there is no fun unctions :(");
             }
             
             ImGui::Separator();

@@ -61,4 +61,6 @@ public:
     { 
         material = newMaterial; 
     }
+
+    glm::vec3 GetColor() const { return material->GetColor(); }
 };

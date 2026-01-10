@@ -106,7 +106,7 @@ protected:
                 for (size_t i = 0; i < it; i++)
                 {
                     Mesh* mesh = selected->model->GetMesh(i);
-                    mesh->SetColor(glm::vec3(color));
+                    mesh->SetColor(color);
                 }
         });
 
