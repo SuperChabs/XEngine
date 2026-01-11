@@ -9,7 +9,6 @@ export module XEngine.Rendering.Renderer;
 
 import XEngine.Core.Camera;
 import XEngine.Core.Shader;
-import XEngine.Scene.SceneManager;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
 
 export struct RenderSettings 
@@ -63,25 +62,25 @@ public:
     void BeginFrame() { Clear(); }
     void EndFrame() {}
 
-    void RenderScene(SceneManager& scene, Camera& camera, Shader& shader,
-                     int screenWidth, int screenHeight)
-    {
-        shader.use();
-
-        glm::mat4 projection = glm::perspective(
-            glm::radians(camera.GetZoom()),
-            float(screenWidth) / float(screenHeight),
-            0.1f, 100.0f
-        );
-
-        glm::mat4 view = camera.GetViewMatrix();
-
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
-        shader.setVec3("viewPos", camera.GetPosition());
-
-        scene.RenderAll(shader);
-    }
+    // void RenderScene(SceneManager& scene, Camera& camera, Shader& shader,
+    //                  int screenWidth, int screenHeight)
+    // {
+    //     shader.use();
+    // 
+    //     glm::mat4 projection = glm::perspective(
+    //         glm::radians(camera.GetZoom()),
+    //         float(screenWidth) / float(screenHeight),
+    //         0.1f, 100.0f
+    //     );
+    // 
+    //     glm::mat4 view = camera.GetViewMatrix();
+    // 
+    //     shader.setMat4("projection", projection);
+    //     shader.setMat4("view", view);
+    //     shader.setVec3("viewPos", camera.GetPosition());
+    // 
+    //     scene.RenderAll(shader);
+    // }
 
     RenderSettings& GetSettings() { return settings; }
     PrimitivesFactory* GetPrimitives() { return primitives.get(); }

@@ -25,15 +25,14 @@ import XEngine.Core.CommandManager;
 import XEngine.Rendering.Skybox;
 import XEngine.Rendering.Framebuffer;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
-import XEngine.Scene.SceneManager;
 import XEngine.Scene.Mesh;
 import XEngine.Scene.Model;
 import XEngine.UI.EditorLayout;
 import XEngine.Core.Logger;
 
-import XEngine.Core.ECS.ECSWorld;
-import XEngine.Core.ECS.Components;
-import XEngine.Core.ECS.Systems;
+import XEngine.ECS.ECSWorld;
+import XEngine.ECS.Components;
+import XEngine.ECS.Systems;
 
 export class Engine : public Application 
 {
@@ -47,12 +46,6 @@ private:
     std::unique_ptr<RenderSystem> renderSystem;
     std::unique_ptr<RotationSystem> rotationSystem;
 
-    SceneObject* gameObject = nullptr;
-    bool gameAutoRotate = false;
-    float gameRotateSpeed = 50.0f; 
-
-    std::unordered_map<uint64_t, ObjectParams> objectParams;
-
 protected:
     void OnInitialize() override
     {
@@ -61,8 +54,6 @@ protected:
         
         mainShader = std::make_unique<Shader>("basic");
         skyboxShader = std::make_unique<Shader>("skybox"); 
-
-        GetMaterialManager()->CreateColorMaterial("orange", glm::vec3(1.0f, 0.5f, 0.0f));
 
         std::vector<std::string> faces = 
         {
@@ -137,7 +128,7 @@ protected:
                 static int frameCount = 0;
                 if (frameCount % 60 == 0) 
                     Logger::Log(LogLevel::DEBUG, "Rendering " + 
-                        std::to_string(GetSceneManager()->GetObjectCount()) + " objects");
+                        std::to_string(GetECSWorld()->GetEntityCount()) + " entities");
                 frameCount++; 
                 
                 renderSystem->Update(*GetECSWorld(), *mainShader, *GetCamera());
@@ -191,7 +182,7 @@ private:
 
             GetECSWorld()->AddComponent<TransformComponent>(entity, glm::vec3(0, 0, 0), glm::vec3(0), glm::vec3(1));
 
-            Mesh* cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+            auto cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
             GetECSWorld()->AddComponent<MeshComponent>(entity, cubeMesh);
 
             auto material = GetMaterialManager()->GetMaterial("gray");

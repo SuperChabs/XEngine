@@ -3,10 +3,10 @@ module;
 #include <entt.hpp>
 #include <glm/glm.hpp>
 
-export module XEngine.Core.ECS.Systems;
+export module XEngine.ECS.Systems;
 
-import XEngine.Core.ECS.Components;
-import XEngine.Core.ECS.ECSWorld;
+import XEngine.ECS.Components;
+import XEngine.ECS.ECSWorld;
 import XEngine.Core.Shader;
 import XEngine.Core.Camera;
 

@@ -4,9 +4,9 @@ module;
 #include <string>
 #include <cstdint>
 
-export module XEngine.Core.ECS.ECSWorld;
+export module XEngine.ECS.ECSWorld;
 
-import XEngine.Core.ECS.Components;
+import XEngine.ECS.Components;
 import XEngine.Core.Logger;
 
 export class ECSWorld 

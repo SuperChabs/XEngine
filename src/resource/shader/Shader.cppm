@@ -18,7 +18,7 @@ export class Shader
 public:
     unsigned int ID = 0;
 
-    Shader(const char* vertexPath,
+    Shader(const char* vertexPath, 
            const char* fragmentPath,
            const char* geometryPath = nullptr)
     {
@@ -141,7 +141,7 @@ private:
             {
                 std::ifstream gFile(gs);
                 std::stringstream gStream;
-                gStream << gFile.rdbuf();
+                gStream << gFile.rdbuf(); 
                 gCode = gStream.str();
             }
         }
@@ -187,7 +187,6 @@ private:
         glDeleteShader(f);
         if (gs) glDeleteShader(g);
 
-        Logger::Log(LogLevel::INFO,
-                    "Shader created, ID = " + std::to_string(ID));
+        Logger::Log(LogLevel::INFO, "Shader created with ID: " + std::to_string(ID));
     }
 };

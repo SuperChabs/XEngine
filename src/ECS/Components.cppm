@@ -5,7 +5,7 @@ module;
 #include <string>
 #include <memory>
 
-export module XEngine.Core.ECS.Components;
+export module XEngine.ECS.Components;
 
 import XEngine.Scene.Mesh;
 import XEngine.Rendering.Material;

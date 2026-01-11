@@ -12,9 +12,10 @@ import XEngine.Rendering.GPUMesh;
 import XEngine.Rendering.Material;
 import XEngine.Rendering.MeshData;
 import XEngine.Rendering.Primitive.PrimitiveGenerator;
+
 import XEngine.Scene.Mesh;
-import XEngine.Scene.SceneManager;
 import XEngine.Scene.Model;
+
 import XEngine.Core.Logger;
 
 export
@@ -69,18 +70,6 @@ public:
             default:
                 return nullptr;
         }
-    }
-
-    static SceneManager* CreatePrimitiveInScene(PrimitiveType type, SceneManager* sceneManager)
-    {
-        Mesh* primitiveMesh = CreatePrimitive(type);
-        if (!primitiveMesh) 
-            return sceneManager;
-
-        std::unique_ptr<Model> model = std::make_unique<Model>(primitiveMesh, GetPrimitiveName(type));
-        sceneManager->AddObject(GetPrimitiveName(type), std::move(model));
-
-        return sceneManager;
     }
 
     static std::string GetPrimitiveName(PrimitiveType type)

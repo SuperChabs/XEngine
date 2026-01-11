@@ -11,13 +11,16 @@ module;
 
 export module XEngine.UI.EditorLayout;
 
-import XEngine.Core.ECS.ECSWorld;
-import XEngine.Core.ECS.Components;
+import XEngine.ECS.ECSWorld;
+import XEngine.ECS.Components;
+
 import XEngine.Core.Camera;
 import XEngine.Core.Logger;
 import XEngine.Core.CommandManager;
+
 import XEngine.Rendering.Renderer;
 import XEngine.Rendering.Framebuffer;
+
 import XEngine.UI.Theme; 
 
 export class EditorLayout
@@ -187,7 +190,7 @@ private:
 
     // ───── UI blocks ─────
 
-    void RenderViewport()
+    void RenderViewport() 
     {
         ImGui::SetNextWindowPos({300, 10}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({800, 650}, ImGuiCond_FirstUseEver);

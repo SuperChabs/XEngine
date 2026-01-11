@@ -16,12 +16,12 @@ import XEngine.Core.Camera;
 import XEngine.Core.ImGuiManager;
 import XEngine.Core.Logger;
 import XEngine.Core.Logging.ConsoleLogger;
-import XEngine.Core.ECS.ECSWorld;
-import XEngine.Rendering.Renderer;
+
+import XEngine.ECS.ECSWorld;
+
+import XEngine.Rendering.Renderer; 
 import XEngine.Rendering.TextureManager;
 import XEngine.Rendering.MaterialManager;
-import XEngine.Scene.SceneManager;
-
 
 export class Application 
 {
@@ -32,7 +32,6 @@ private:
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<TextureManager> textureManager;
-    std::unique_ptr<SceneManager> sceneManager;
     std::unique_ptr<ImGuiManager> imGuiManager;
     std::unique_ptr<MaterialManager> materialManager;
     std::unique_ptr<ECSWorld> ecsWorld;
@@ -71,7 +70,6 @@ private:
     void Update()
     {
         float deltaTime = time->GetDeltaTime();
-        sceneManager->Update(deltaTime);
         
         OnUpdate(deltaTime);
     }
@@ -135,8 +133,8 @@ protected:
 
     Application(int width, int height, const std::string& title)
         : window(nullptr), input(nullptr), time(nullptr), camera(nullptr),
-            renderer(nullptr), textureManager(nullptr), sceneManager(nullptr),
-            isRunning(false), showUI(true), cameraControlEnabled(false)
+            renderer(nullptr), textureManager(nullptr), isRunning(false), 
+            showUI(true), cameraControlEnabled(false)
     {
         window = std::make_unique<Window>(width, height, title);
 
@@ -196,7 +194,6 @@ public:
         camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
         renderer = std::make_unique<Renderer>();
         textureManager = std::make_unique<TextureManager>();
-        sceneManager = std::make_unique<SceneManager>();
         imGuiManager = std::make_unique<ImGuiManager>();
         materialManager = std::make_unique<MaterialManager>(textureManager.get());
         ecsWorld = std::make_unique<ECSWorld>();
@@ -263,7 +260,6 @@ public:
     Time* GetTime() const { return time.get(); }
     Camera* GetCamera() const { return camera.get(); }
     Renderer* GetRenderer() const { return renderer.get(); }
-    SceneManager* GetSceneManager() const { return sceneManager.get(); }
     TextureManager* GetTextureManager() const { return textureManager.get(); }
     ImGuiManager* GetImGuiManager() const { return imGuiManager.get(); }
     MaterialManager* GetMaterialManager() const { return materialManager.get(); }
