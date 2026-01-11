@@ -50,6 +50,10 @@ target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD)
 add_library(magic_enum INTERFACE)
 target_include_directories(magic_enum INTERFACE ${CMAKE_SOURCE_DIR}/vendor/magic_enum/include)
 
+# ========== ENTT =============
+add_library(entt INTERFACE)
+target_include_directories(entt INTERFACE ${CMAKE_SOURCE_DIR}/vendor/entt/src/entt)
+
 # ========== XEngine =============
 include_directories(${IMGUI_INCLUDE_DIRS})
 
@@ -120,6 +124,7 @@ target_link_libraries(${PROJECT_NAME}
     assimp
     imgui
     magic_enum
+    entt
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

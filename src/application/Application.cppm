@@ -16,6 +16,7 @@ import XEngine.Core.Camera;
 import XEngine.Core.ImGuiManager;
 import XEngine.Core.Logger;
 import XEngine.Core.Logging.ConsoleLogger;
+import XEngine.Core.ECS.ECSWorld;
 import XEngine.Rendering.Renderer;
 import XEngine.Rendering.TextureManager;
 import XEngine.Rendering.MaterialManager;
@@ -34,6 +35,7 @@ private:
     std::unique_ptr<SceneManager> sceneManager;
     std::unique_ptr<ImGuiManager> imGuiManager;
     std::unique_ptr<MaterialManager> materialManager;
+    std::unique_ptr<ECSWorld> ecsWorld;
     
     ConsoleLogger console;
 
@@ -197,6 +199,7 @@ public:
         sceneManager = std::make_unique<SceneManager>();
         imGuiManager = std::make_unique<ImGuiManager>();
         materialManager = std::make_unique<MaterialManager>(textureManager.get());
+        ecsWorld = std::make_unique<ECSWorld>();
         
         renderer->Initialize();
         
@@ -264,4 +267,5 @@ public:
     TextureManager* GetTextureManager() const { return textureManager.get(); }
     ImGuiManager* GetImGuiManager() const { return imGuiManager.get(); }
     MaterialManager* GetMaterialManager() const { return materialManager.get(); }
+    ECSWorld* GetECSWorld() const { return ecsWorld.get(); }
 };

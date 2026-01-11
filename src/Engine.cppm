@@ -9,6 +9,8 @@ module;
 
 #include <imgui.h>
 
+#include <entt.hpp>
+
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -29,6 +31,10 @@ import XEngine.Scene.Model;
 import XEngine.UI.EditorLayout;
 import XEngine.Core.Logger;
 
+import XEngine.Core.ECS.ECSWorld;
+import XEngine.Core.ECS.Components;
+import XEngine.Core.ECS.Systems;
+
 export class Engine : public Application 
 {
 private:
@@ -37,6 +43,9 @@ private:
     std::unique_ptr<Skybox> skybox;
 
     std::unique_ptr<EditorLayout> editorLayout;
+
+    std::unique_ptr<RenderSystem> renderSystem;
+    std::unique_ptr<RotationSystem> rotationSystem;
 
     SceneObject* gameObject = nullptr;
     bool gameAutoRotate = false;
@@ -67,48 +76,11 @@ protected:
         
         unsigned int cubemapTexture = GetTextureManager()->LoadCubemap(faces);
         skybox = std::make_unique<Skybox>(cubemapTexture, skyboxShader.get());
-        
-        CommandManager::RegisterCommand("onCreateCube",
-        [this](const CommandArgs&) 
-        {
-            Mesh* gameMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
-            if (gameMesh)
-            {
-                auto material = GetMaterialManager()->GetMaterial("gray");
-                gameMesh->SetMaterial(material);
 
-                std::unique_ptr<Model> gameModel = std::make_unique<Model>(gameMesh, "Cube");
-                SceneObject* newObj = GetSceneManager()->AddObject("Cube", std::move(gameModel));
-                objectParams[newObj->objectID] = ObjectParams();
-                Logger::Log(LogLevel::INFO, "Cube created with ID: " + std::to_string(newObj->objectID));
-            }
-        });
+        renderSystem = std::make_unique<RenderSystem>();
+        rotationSystem = std::make_unique<RotationSystem>();
 
-        CommandManager::RegisterCommand("onExit",
-        [this](const CommandArgs&) 
-        {
-            Logger::Log(LogLevel::INFO, "Exit requested from menu");
-            Stop();
-        });
-
-        CommandManager::RegisterCommand("onChangeMeshColor", 
-        [this](const CommandArgs& args)
-        {
-            if (args.size() != 1)
-                return;
-
-            const auto& color = std::get<glm::vec3>(args[0]);
-
-            SceneObject* selected = editorLayout->GetSelectedObject();
-            auto it = selected->model->GetMeshCount();
-
-            if (selected)
-                for (size_t i = 0; i < it; i++)
-                {
-                    Mesh* mesh = selected->model->GetMesh(i);
-                    mesh->SetColor(color);
-                }
-        });
+        InitCommandRegistration();
 
         Logger::Log(LogLevel::INFO, "Creating EditorLayout...");
         editorLayout = std::make_unique<EditorLayout>();
@@ -126,17 +98,7 @@ protected:
 
     void OnUpdate(float deltaTime) override
     {
-        if (GetSceneManager()->GetObjectCount() > 0 && gameObject)
-        {
-            for (const auto& [id, obj] : GetSceneManager()->GetObjects()) 
-            {
-                auto& params = objectParams[obj->objectID];
-                
-                if (params.autoRotate)
-                    obj->transform.Rotate(glm::vec3(0.0f, params.rotateSpeed * deltaTime, 0.0f));
-                
-            }
-        }
+        rotationSystem->Update(*GetECSWorld(), deltaTime);
     }
 
     void OnRender() override
@@ -178,7 +140,7 @@ protected:
                         std::to_string(GetSceneManager()->GetObjectCount()) + " objects");
                 frameCount++; 
                 
-                GetSceneManager()->RenderAll(*mainShader);
+                renderSystem->Update(*GetECSWorld(), *mainShader, *GetCamera());
                 skybox->Render(*GetCamera(), projection);
             }
             
@@ -211,11 +173,79 @@ protected:
             return;
         }
 
-        editorLayout->RenderEditor( GetSceneManager(), GetCamera(), GetRenderer());
+        editorLayout->RenderEditor( GetECSWorld(), GetCamera(), GetRenderer());
     }
 
 public:
     Engine(int w, int h, const std::string& title)
         : Application(w, h, title)
     {}
+
+private:
+    void InitCommandRegistration()
+    {
+        CommandManager::RegisterCommand("onCreateCube",
+        [this](const CommandArgs&) 
+        {
+            auto entity = GetECSWorld()->CreateEntity("Cube");
+
+            GetECSWorld()->AddComponent<TransformComponent>(entity, glm::vec3(0, 0, 0), glm::vec3(0), glm::vec3(1));
+
+            Mesh* cubeMesh = PrimitivesFactory::CreatePrimitive(PrimitiveType::CUBE);
+            GetECSWorld()->AddComponent<MeshComponent>(entity, cubeMesh);
+
+            auto material = GetMaterialManager()->GetMaterial("gray");
+            GetECSWorld()->AddComponent<MaterialComponent>(entity, material);
+
+            GetECSWorld()->AddComponent<ColorComponent>(entity, glm::vec3(0.5f, 0.5f, 0.5f));
+            GetECSWorld()->AddComponent<VisibilityComponent>(entity, true);
+            GetECSWorld()->AddComponent<RotationComponent >(entity, 50.0f);
+            
+            Logger::Log(LogLevel::INFO, "Cube entity created");
+        });
+
+        CommandManager::RegisterCommand("onExit",
+        [this](const CommandArgs&) 
+        {
+            Logger::Log(LogLevel::INFO, "Exit requested from menu");
+            Stop();
+        });
+
+        CommandManager::RegisterCommand("onChangeMeshColor", 
+        [this](const CommandArgs& args)
+        {
+            if (args.size() != 1)
+            {
+                Logger::Log(LogLevel::ERROR, "onChangeMeshColor requires 1 argument: color");
+                return;
+            }
+
+            const auto& color = std::get<glm::vec3>(args[0]);
+
+            entt::entity selected = editorLayout->GetSelectedEntity();
+            
+            if (selected == entt::null || !GetECSWorld()->IsValid(selected))
+            {
+                Logger::Log(LogLevel::WARNING, "No entity selected");
+                return;
+            }
+
+            if (GetECSWorld()->HasComponent<ColorComponent>(selected))
+            {
+                auto& colorComp = GetECSWorld()->GetComponent<ColorComponent>(selected);
+                colorComp.color = color;
+            }
+            else
+            {
+                GetECSWorld()->AddComponent<ColorComponent>(selected, color);
+            }
+
+            if (GetECSWorld()->HasComponent<MeshComponent>(selected))
+            {
+                auto& meshComp = GetECSWorld()->GetComponent<MeshComponent>(selected);
+                if (meshComp.mesh)
+                    meshComp.mesh->SetColor(color);
+            }
+        });
+    }
 };

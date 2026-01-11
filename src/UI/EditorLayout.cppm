@@ -1,16 +1,18 @@
 module; 
 
 #include <glm/glm.hpp>
-
 #include <imgui.h>
+#include <entt.hpp>
 
 #include <string>
 #include <cstring>
 #include <memory>
+#include <unordered_map>
 
 export module XEngine.UI.EditorLayout;
 
-import XEngine.Scene.SceneManager;
+import XEngine.Core.ECS.ECSWorld;
+import XEngine.Core.ECS.Components;
 import XEngine.Core.Camera;
 import XEngine.Core.Logger;
 import XEngine.Core.CommandManager;
@@ -22,7 +24,7 @@ export class EditorLayout
 {
 public:
     EditorLayout()
-        : selectedObject(nullptr)
+        : selectedEntity(entt::null)
         , showHierarchy(true)
         , showInspector(true)
         , showProperties(true)
@@ -33,13 +35,12 @@ public:
         , isViewportFocused(false)
     {
         framebuffer = std::make_unique<Framebuffer>(1280, 720);
-        Logger::Log(LogLevel::INFO,
-            "EditorLayout created with Framebuffer");
+        Logger::Log(LogLevel::INFO, "EditorLayout created with Framebuffer");
     }
 
-    void RenderEditor(SceneManager* sceneManager, Camera* camera, Renderer* renderer)
+    void RenderEditor(ECSWorld* ecs, Camera* camera, Renderer* renderer)
     {
-        if (!sceneManager || !camera || !renderer)
+        if (!ecs || !camera || !renderer)
         {
             Logger::Log(LogLevel::ERROR, "EditorLayout: nullptr passed to RenderEditor");
             return;
@@ -150,8 +151,8 @@ public:
 
         ImGui::End();
 
-        if (showHierarchy)  RenderSceneHierarchy(sceneManager);
-        if (showInspector)  RenderInspector();
+        if (showHierarchy)  RenderSceneHierarchy(ecs);
+        if (showInspector)  RenderInspector(ecs);
         if (showProperties) RenderProperties(camera, renderer);
         if (showConsole)    RenderConsole();
         
@@ -163,14 +164,14 @@ public:
     bool   IsViewportHovered() const { return isViewportHovered; }
     bool   IsViewportFocused() const { return isViewportFocused; }
 
-    SceneObject* GetSelectedObject() const { return selectedObject;}
+    entt::entity GetSelectedEntity() const { return selectedEntity; }
     Framebuffer* GetFramebuffer() const { return framebuffer.get(); }
-    void SetSelectedObject(SceneObject* obj) { selectedObject = obj; }
+    void SetSelectedEntity(entt::entity entity) { selectedEntity = entity; }
 
 private:
     // ───── state ─────
 
-    SceneObject* selectedObject;
+    entt::entity selectedEntity;
 
     bool showHierarchy;
     bool showInspector;
@@ -184,37 +185,7 @@ private:
 
     std::unique_ptr<Framebuffer> framebuffer;
 
-    std::vector<std::function<void()>> editorFunctions;
-
     // ───── UI blocks ─────
-
-    void RenderControlPanel(std::function<void()> onCreateCube)
-    {
-        ImGui::SetNextWindowPos({10, 10}, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({280, 150}, ImGuiCond_FirstUseEver);
-
-        ImGui::Begin("Control Panel");
-
-        ImGui::Text("Scene Controls");
-        ImGui::Separator();
-
-        if (ImGui::Button("Create Cube", {-1, 30}))
-        {
-            if (onCreateCube) onCreateCube();
-            Logger::Log(LogLevel::INFO, "Cube created");
-        }
-
-        if (ImGui::Button("Create Sphere", {-1, 30}))
-            Logger::Log(LogLevel::INFO, "Sphere not implemented");
-
-        if (ImGui::Button("Clear Scene", {-1, 30}))
-            Logger::Log(LogLevel::INFO, "Clear not implemented");
-
-        ImGui::Separator();
-        ImGui::Checkbox("Show Console", &showConsole);
-
-        ImGui::End();
-    }
 
     void RenderViewport()
     {
@@ -260,141 +231,176 @@ private:
         ImGui::PopStyleVar();
     }
 
-    void RenderSceneHierarchy(SceneManager* sceneManager)
+    void RenderSceneHierarchy(ECSWorld* ecs)
     {
         ImGui::SetNextWindowPos({10, 170}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({280, 400}, ImGuiCond_FirstUseEver);
 
         ImGui::Begin("Hierarchy", &showHierarchy);
 
-        ImGui::Text("Objects: %zu",
-            sceneManager->GetObjectCount());
+        ImGui::Text("Entities: %zu", ecs->GetEntityCount());
         ImGui::Separator();
 
-        uint64_t objectToDelete = 0;
+        entt::entity entityToDelete = entt::null;
 
-        for (auto& [id, objPtr] : sceneManager->GetObjects())
+        ecs->Each<TagComponent, IDComponent>(
+            [&](entt::entity entity, TagComponent& tag, IDComponent& id) 
         {
-            if (!objPtr) continue;
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
-            SceneObject* obj = objPtr.get();
-
-            ImGuiTreeNodeFlags flags =
-                ImGuiTreeNodeFlags_Leaf |
-                ImGuiTreeNodeFlags_NoTreePushOnOpen;
-
-            if (selectedObject == obj)
+            if (selectedEntity == entity)
                 flags |= ImGuiTreeNodeFlags_Selected;
 
-            std::string label = obj->name + " [" + std::to_string(obj->objectID) + "]";
+            std::string label = tag.name + " [" + std::to_string(id.id) + "]";
 
-            ImGui::TreeNodeEx((void*)(intptr_t)id, flags, "%s", label.c_str());
+            ImGui::TreeNodeEx((void*)(intptr_t)entity, flags, "%s", label.c_str());
 
             if (ImGui::IsItemClicked())
-                selectedObject = obj;
+                selectedEntity = entity;
 
             if (ImGui::BeginPopupContextItem())
             {
                 if (ImGui::MenuItem("Delete"))
-                    objectToDelete = obj->objectID;
+                    entityToDelete = entity;
 
                 ImGui::EndPopup();
             }
-        }
+        });
 
-        if (objectToDelete)
-            sceneManager->RemoveObject(objectToDelete);
+        if (entityToDelete != entt::null)
+        {
+            ecs->DestroyEntity(entityToDelete);
+            if (selectedEntity == entityToDelete)
+                selectedEntity = entt::null;
+        }
 
         ImGui::End();
     }
 
-    void RenderInspector()
+    void RenderInspector(ECSWorld* ecs)
     {
         ImGui::SetNextWindowPos(ImVec2(1110, 10), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(300, 660), ImGuiCond_FirstUseEver);
         
         ImGui::Begin("Inspector", &showInspector);
         
-        if (selectedObject)
+        if (selectedEntity != entt::null && ecs->IsValid(selectedEntity))
         {
-            ImGui::Text("Object");
+            ImGui::Text("Entity");
             ImGui::Separator();
             
-            char buffer[256];
-            strncpy(buffer, selectedObject->name.c_str(), sizeof(buffer));
-            buffer[255] = '\0';
-            
-            ImGui::Text("Name:");
-            ImGui::SameLine();
-            ImGui::PushItemWidth(-1);
-            if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
-                selectedObject->name = std::string(buffer);
-            ImGui::PopItemWidth();
+            if (ecs->HasComponent<TagComponent>(selectedEntity))
+            {
+                auto& tag = ecs->GetComponent<TagComponent>(selectedEntity);
+                
+                char buffer[256];
+                strncpy(buffer, tag.name.c_str(), sizeof(buffer));
+                buffer[255] = '\0';
+                
+                ImGui::Text("Name:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(-1);
+                if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
+                    tag.name = std::string(buffer);
+                ImGui::PopItemWidth();
+            }
             
             ImGui::Spacing();
-            ImGui::Checkbox("Active", &selectedObject->isActive);
+            
+            if (ecs->HasComponent<VisibilityComponent>(selectedEntity))
+            {
+                auto& vis = ecs->GetComponent<VisibilityComponent>(selectedEntity);
+                ImGui::Checkbox("Active", &vis.isActive);
+            }
             
             ImGui::Spacing();
             ImGui::Separator();
             
-            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+            if (ecs->HasComponent<TransformComponent>(selectedEntity))
             {
-                glm::vec3 pos = selectedObject->transform.GetPosition();
-                ImGui::Text("Position");
-                if (ImGui::DragFloat3("##Pos", &pos[0], 0.1f))
-                    selectedObject->transform.SetPosition(pos);
-                
-                ImGui::Spacing();
-                ImGui::Separator();
-                
-                glm::vec3 rot = selectedObject->transform.GetRotation();
-                ImGui::Text("Rotation");
-                if (ImGui::DragFloat3("##Rot", &rot[0], 1.0f))
-                    selectedObject->transform.SetRotation(rot);
-                
-                ImGui::Spacing();
-                ImGui::Separator();
-                
-                glm::vec3 scale = selectedObject->transform.GetScale();
-                float uniformScale = scale.x;
-                ImGui::Text("Scale");
-                if (ImGui::DragFloat("##Scale", &uniformScale, 0.01f, 0.01f, 10.0f))
-                    selectedObject->transform.SetScale(uniformScale);
+                if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    auto& transform = ecs->GetComponent<TransformComponent>(selectedEntity);
+                    
+                    ImGui::Text("Position");
+                    ImGui::DragFloat3("##Pos", &transform.position[0], 0.1f);
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    
+                    ImGui::Text("Rotation");
+                    ImGui::DragFloat3("##Rot", &transform.rotation[0], 1.0f);
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    
+                    ImGui::Text("Scale");
+                    float uniformScale = transform.scale.x;
+                    if (ImGui::DragFloat("##Scale", &uniformScale, 0.01f, 0.01f, 10.0f))
+                        transform.scale = glm::vec3(uniformScale);
+                }
             }
 
-            ImGui::Separator();
-
-            glm::vec3 color = selectedObject->model->GetMesh(0)->GetColor();
-            if (ImGui::ColorEdit3("SetColor", &color[0]))
-                CommandManager::ExecuteCommand("onChangeMeshColor", {color});
-
-            ImGui::Separator();
-
-            if (ImGui::CollapsingHeader("Fun Functions"))
+            if (ecs->HasComponent<ColorComponent>(selectedEntity))
             {
-                ImGui::Text("there is no fun unctions :(");
+                auto& colorComp = ecs->GetComponent<ColorComponent>(selectedEntity);
+                
+                static std::unordered_map<entt::entity, float[3]> entityColors;
+                static std::unordered_map<entt::entity, bool> entityColorsInitialized;
+                
+                if (!entityColorsInitialized[selectedEntity])
+                {
+                    entityColors[selectedEntity][0] = colorComp.color.r;
+                    entityColors[selectedEntity][1] = colorComp.color.g;
+                    entityColors[selectedEntity][2] = colorComp.color.b;
+                    entityColorsInitialized[selectedEntity] = true;
+                }
+                
+                float* colorEdit = entityColors[selectedEntity];
+                
+                ImGui::Text("Color");
+                if (ImGui::ColorEdit3("##Color", colorEdit))
+                {
+                    glm::vec3 newColor(colorEdit[0], colorEdit[1], colorEdit[2]);
+                    
+                    if (CommandManager::HasCommand("onChangeMeshColor"))
+                        CommandManager::ExecuteCommand("onChangeMeshColor", {newColor});
+                }
+            }
+
+            if (ecs->HasComponent<RotationComponent>(selectedEntity))
+            {
+                if (ImGui::CollapsingHeader("Rotation Animation"))
+                {
+                    auto& rotation = ecs->GetComponent<RotationComponent>(selectedEntity);
+                    
+                    ImGui::Checkbox("Auto Rotate", &rotation.autoRotate);
+                    ImGui::DragFloat("Speed", &rotation.speed, 1.0f, 0.0f, 360.0f);
+                    ImGui::DragFloat3("Axis", &rotation.axis[0], 0.1f, -1.0f, 1.0f);
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Add Rotation Component"))
+                    ecs->AddComponent<RotationComponent>(selectedEntity);
             }
             
-            ImGui::Separator();
+            if (ecs->HasComponent<MeshComponent>(selectedEntity))
+                if (ImGui::CollapsingHeader("Mesh Renderer"))
+                {
+                    ImGui::BulletText("Type: Mesh");
+                    ImGui::BulletText("Has Mesh: Yes");
+                }
             
-            if (ImGui::CollapsingHeader("Mesh Renderer"))
-            {
-                ImGui::BulletText("Type: Cube");
-                ImGui::BulletText("Vertices: 24");
-                ImGui::BulletText("Triangles: 12");
-            }
-            
-            if (ImGui::CollapsingHeader("Material"))
-            {
-                ImGui::BulletText("Shader: basic");
-                ImGui::BulletText("Diffuse: bricks2.jpg");
-            }
+            if (ecs->HasComponent<MaterialComponent>(selectedEntity))
+                if (ImGui::CollapsingHeader("Material"))
+                    ImGui::BulletText("Has Material: Yes"); 
         }
         else
         {
-            ImGui::TextDisabled("No object selected");
+            ImGui::TextDisabled("No entity selected");
             ImGui::Separator();
-            ImGui::TextWrapped("Select an object from Hierarchy");
+            ImGui::TextWrapped("Select an entity from Hierarchy");
         }
         
         ImGui::End();
@@ -455,7 +461,7 @@ private:
         ImGui::SetNextWindowSize({800, 120}, ImGuiCond_FirstUseEver);
 
         ImGui::Begin("Console", &showConsole);
-        ImGui::Text("[INFO] Editor ready");
+        ImGui::Text("[INFO] Editor ready with ECS");
         ImGui::End();
     }
 };

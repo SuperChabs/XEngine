@@ -188,6 +188,6 @@ private:
         if (gs) glDeleteShader(g);
 
         Logger::Log(LogLevel::INFO,
-                    "Shader created, ID=" + std::to_string(ID));
+                    "Shader created, ID = " + std::to_string(ID));
     }
 };

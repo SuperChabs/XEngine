@@ -125,10 +125,7 @@ public:
     { 
         color = newColor; 
         useColor = true;
-        Logger::Log(LogLevel::INFO, "Material color changed to: (" + 
-            std::to_string(color.r) + ", " + 
-            std::to_string(color.g) + ", " + 
-            std::to_string(color.b) + ")");
+        // Logger::Log(LogLevel::INFO, "Material color changed to: (" + std::to_string(color.r) + ", " + std::to_string(color.g) + ", " + std::to_string(color.b) + ")");
     }
 
     void SetTextures(std::vector<Texture> newTextures) { textures = newTextures; }
