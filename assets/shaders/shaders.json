@@ -2,13 +2,13 @@
     "shader": [
         {
             "name": "skybox",
-            "vertex": "assets/shaders/vertex/skybox.vs",
-            "fragment": "assets/shaders/fragment/skybox.fs"
+            "vertex": "vertex/skybox.vs",
+            "fragment": "fragment/skybox.fs"
         },
         {
             "name": "basic",
-            "vertex": "assets/shaders/vertex/basic.vs",
-            "fragment": "assets/shaders/fragment/basic.fs"
+            "vertex": "vertex/basic.vs",
+            "fragment": "fragment/basic.fs"
         }
     ]
 }

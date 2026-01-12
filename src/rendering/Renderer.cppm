@@ -8,7 +8,6 @@ module;
 export module XEngine.Rendering.Renderer;
 
 import XEngine.Core.Camera;
-import XEngine.Core.Shader;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
 
 export struct RenderSettings 

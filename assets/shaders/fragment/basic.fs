@@ -35,7 +35,7 @@ void main()
     else 
         baseColor = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
     
-    vec3 ambient = 0.6 * baseColor;
+    vec3 ambient = 0.9 * baseColor;
     
     vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0)); 
     vec3 norm = normalize(fs_in.Normal);
@@ -44,6 +44,4 @@ void main()
     
     vec3 result = ambient + diffuse;
     FragColor = vec4(result, 1.0);
-
-    // FragColor = vec4(vec3(1.0, 0.0, 1.0), 1.0);
 }

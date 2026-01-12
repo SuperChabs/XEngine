@@ -19,16 +19,19 @@ module;
 export module XEngine.Engine;
 
 import XEngine.Application.Application;
-import XEngine.Core.Shader;
+
 import XEngine.Core.Input;
 import XEngine.Core.CommandManager;
+import XEngine.Core.Logger;
+
 import XEngine.Rendering.Skybox;
 import XEngine.Rendering.Framebuffer;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
+
 import XEngine.Scene.Mesh;
 import XEngine.Scene.Model;
+
 import XEngine.UI.EditorLayout;
-import XEngine.Core.Logger;
 
 import XEngine.ECS.ECSWorld;
 import XEngine.ECS.Components;

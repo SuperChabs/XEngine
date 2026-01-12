@@ -2,7 +2,7 @@ module;
 
 #include <string>
 #include <chrono>
-#include <cstdio>
+#include <print>
 
 export module XEngine.Core.Logging.ConsoleLogger;
 
@@ -18,7 +18,7 @@ public:
         std::string timeStr = formatTime(data.timestamp);
 
         if (data.showOrigin)
-            std::printf("[%s] [%s] [%s] %s (%s:%i)\n", 
+            std::println("[{}] [{}] [{}] {} ({}:{})", 
                         timeStr.c_str(), 
                         lvl, 
                         cat,
@@ -26,7 +26,7 @@ public:
                         data.f.c_str(), 
                         data.line);
         else
-            std::printf("[%s] [%s] [%s] %s\n", 
+            std::println("[{}] [{}] [{}] {}", 
                         timeStr.c_str(), 
                         lvl,
                         cat, 
@@ -34,29 +34,29 @@ public:
     }
 
 private:
-static const char* levelToString(LogLevel lvl)
-{
-    switch (lvl)
+    const char* levelToString(LogLevel lvl)
     {
-        case LogLevel::INFO:     
-            return "\033[32mINFO\033[0m";        // green
-        case LogLevel::WARNING:  
-            return "\033[33mWARNING\033[0m";     // yellow
-        case LogLevel::ERROR:    
-            return "\033[31mERROR\033[0m";       // red
-        case LogLevel::DEBUG:    
-            return "\033[36mDEBUG\033[0m";       // cian
-        case LogLevel::INPUT:    
-            return "\033[35mINPUT\033[0m";       // magenta
-        case LogLevel::CRITICAL: 
-            return "\033[1;31mCRITICAL\033[0m";  // fat yellow
-        default:                 
-            return "\033[37mUNKNOWN\033[0m";     // gray
+        switch (lvl)
+        {
+            case LogLevel::INFO:     
+                return "\033[32mINFO\033[0m";        // green
+            case LogLevel::WARNING:  
+                return "\033[33mWARNING\033[0m";     // yellow
+            case LogLevel::ERROR:    
+                return "\033[31mERROR\033[0m";       // red
+            case LogLevel::DEBUG:    
+                return "\033[36mDEBUG\033[0m";       // cian
+            case LogLevel::INPUT:    
+                return "\033[35mINPUT\033[0m";       // magenta
+            case LogLevel::CRITICAL: 
+                return "\033[1;31mCRITICAL\033[0m";  // fat yellow
+            default:                 
+                return "\033[37mUNKNOWN\033[0m";     // gray
+        }
     }
-}
 
 
-    static const char* categoryToString(LogCategory cat)
+    const char* categoryToString(LogCategory cat)
     {
         switch (cat)
         {
@@ -68,7 +68,7 @@ static const char* levelToString(LogLevel lvl)
         }
     }
 
-    static std::string formatTime(const std::chrono::system_clock::time_point& tp)
+    std::string formatTime(const std::chrono::system_clock::time_point& tp)
     {
         auto time = std::chrono::system_clock::to_time_t(tp);
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(

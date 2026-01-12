@@ -16,6 +16,7 @@ import XEngine.Core.Camera;
 import XEngine.Core.ImGuiManager;
 import XEngine.Core.Logger;
 import XEngine.Core.Logging.ConsoleLogger;
+import XEngine.Core.Logging.FileLogger;
 
 import XEngine.ECS.ECSWorld;
 
@@ -40,6 +41,7 @@ private:
     std::unique_ptr<ShaderManager> shaderManager;
     
     ConsoleLogger console;
+    FileLogger file;
 
     bool isRunning;
     bool showUI;
@@ -51,6 +53,12 @@ private:
         
         if (input->IsKeyJustPressed(XKey::KEY_F1)) 
             showUI = !showUI;
+
+        if (input->IsKeyJustPressed(XKey::KEY_F5))
+        {
+            shaderManager->ReloadAll();
+            Logger::Log(LogLevel::INFO, "Reloaded all shaders");
+        }
         
         if (cameraControlEnabled) 
         {
@@ -214,6 +222,7 @@ public:
         SetCameraControlMode(false);  
         
         Logger::AddSink(&console);
+        Logger::AddSink(&file);
         
         OnInitialize();
 

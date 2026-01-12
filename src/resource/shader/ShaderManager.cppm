@@ -32,6 +32,9 @@ export class ShaderManager
 
     std::unordered_map<std::string, std::unique_ptr<ShaderObj>> shaders;
 
+    std::string runtimePath = "assets/shaders/"; 
+    std::string sourcePath = "../assets/shaders/";
+
     GLuint currentShader = 0;
 
 public:
@@ -49,7 +52,9 @@ public:
                 continue;
             }
 
-            ShaderSource source = LoadShader(config.vertexPath, config.fragmentPath, config.geometryPath);
+            ShaderSource source = LoadShader(runtimePath + config.vertexPath, 
+                                             runtimePath + config.fragmentPath, 
+                                             runtimePath + config.geometryPath);
             if (source.vertex.empty() || source.fragment.empty()) 
             {
                 Logger::Log(LogLevel::ERROR, 
@@ -133,6 +138,62 @@ public:
         return true;
     }
 
+    void ReloadAll()
+    {
+        for (auto& s : shaders)
+        {
+
+            ShaderObj* oldShader = s.second.get();
+            GLuint oldID = oldShader->ID;
+
+            std::vector<ShaderConfig> configs = scl.LoadShaderConfigs("assets/shaders/shaders.json");
+            
+            ShaderConfig* config = nullptr;
+            for (auto& c : configs) 
+            {
+                if (c.name == s.second->name) 
+                    {
+                        config = &c;
+                        break;
+                    }
+            }
+
+            if (!config) 
+            {
+                Logger::Log(LogLevel::ERROR, "Config not found for shader: " + s.second->name);
+                continue;
+            }
+
+            ShaderSource newSource = LoadShader(sourcePath + config->vertexPath, 
+                                                sourcePath + config->fragmentPath, 
+                                                sourcePath + config->geometryPath);
+
+            if (newSource.vertex.empty() || newSource.fragment.empty()) {
+                Logger::Log(LogLevel::ERROR, "Failed to reload source: " + s.second->name);
+                continue;
+            }
+
+            GLuint newID = CompileShader(newSource.vertex, newSource.fragment, newSource.geometry);
+            if (newID == 0) 
+            {
+                Logger::Log(LogLevel::ERROR, "Failed to recompile: " + s.second->name);
+                continue;
+            }
+
+            glDeleteProgram(oldID);
+
+            oldShader->ID = newID;
+
+            if (currentShader == oldID) 
+            {
+                glUseProgram(newID);
+                currentShader = newID;
+            }
+
+            Logger::Log(LogLevel::INFO, "Shader reloaded: " + s.second->name);
+        }
+    }
+
     void UnLoad(const std::string& name)
     {
         auto it = shaders.find(name);
@@ -175,8 +236,6 @@ public:
 
         shaders.clear();
         currentShader = 0;
-
-        Logger::Log(LogLevel::INFO, "All shaders unloaded");
     }
 
     void SetBool(const std::string& shaderName, const std::string& variableName, bool v) const
