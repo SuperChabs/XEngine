@@ -25,7 +25,7 @@ private:
     TextureManager* textureManager;
     MaterialConfigLoader configLoader;
 
-    std::string runtimePath = "assets/";
+    std::string runtimePath = "../assets/";
     std::string sourcePath = "../assets/";
     std::string materialConfigPath = "../assets/configs/materials.json";
 

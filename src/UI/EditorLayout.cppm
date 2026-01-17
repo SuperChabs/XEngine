@@ -20,6 +20,8 @@ import XEngine.Core.CommandManager;
 
 import XEngine.Rendering.Renderer;
 import XEngine.Rendering.Framebuffer;
+import XEngine.Rendering.Light;
+
 import XEngine.Resource.Material.MaterialManager;
 
 import XEngine.UI.Theme; 
@@ -87,12 +89,34 @@ public:
             
             if (ImGui::BeginMenu("Create"))
             {
-                if (ImGui::MenuItem("Cube"))
-                    if(CommandManager::HasCommand("onCreateCube")) 
-                        CommandManager::ExecuteCommand("onCreateCube", {});
+                if (ImGui::BeginMenu("Mesh"))
+                {
+                    if (ImGui::MenuItem("Cube"))
+                        if(CommandManager::HasCommand("onCreateCube")) 
+                            CommandManager::ExecuteCommand("onCreateCube", {});
+                    
+                    if (ImGui::MenuItem("Sphere"))
+                        Logger::Log(LogLevel::INFO, "Sphere not implemented");
+                    
+                    ImGui::EndMenu();
+                }
                 
-                if (ImGui::MenuItem("Sphere"))
-                    Logger::Log(LogLevel::INFO, "Sphere not implemented");
+                if (ImGui::BeginMenu("Light"))
+                {
+                    if (ImGui::MenuItem("Directional Light"))
+                        if(CommandManager::HasCommand("onCreateDirectionalLight")) 
+                            CommandManager::ExecuteCommand("onCreateDirectionalLight", {});
+                    
+                    if (ImGui::MenuItem("Point Light"))
+                        if(CommandManager::HasCommand("onCreatePointLight")) 
+                            CommandManager::ExecuteCommand("onCreatePointLight", {});
+                    
+                    if (ImGui::MenuItem("Spot Light"))
+                        if(CommandManager::HasCommand("onCreateSpotLight")) 
+                            CommandManager::ExecuteCommand("onCreateSpotLight", {});
+                    
+                    ImGui::EndMenu();
+                }
                 
                 ImGui::EndMenu();
             }
@@ -434,33 +458,6 @@ private:
                 }
             }
 
-            // if (ecs->HasComponent<ColorComponent>(selectedEntity))
-            // {
-            //     auto& colorComp = ecs->GetComponent<ColorComponent>(selectedEntity);
-                
-            //     static std::unordered_map<entt::entity, float[3]> entityColors;
-            //     static std::unordered_map<entt::entity, bool> entityColorsInitialized;
-                
-            //     if (!entityColorsInitialized[selectedEntity])
-            //     {
-            //         entityColors[selectedEntity][0] = colorComp.color.r;
-            //         entityColors[selectedEntity][1] = colorComp.color.g;
-            //         entityColors[selectedEntity][2] = colorComp.color.b;
-            //         entityColorsInitialized[selectedEntity] = true;
-            //     }
-                
-            //     float* colorEdit = entityColors[selectedEntity];
-                
-            //     ImGui::Text("Color");
-            //     if (ImGui::ColorEdit3("##Color", colorEdit))
-            //     {
-            //         glm::vec3 newColor(colorEdit[0], colorEdit[1], colorEdit[2]);
-                    
-            //         if (CommandManager::HasCommand("onChangeMeshColor"))
-            //             CommandManager::ExecuteCommand("onChangeMeshColor", {newColor});
-            //     }
-            // }
-
             if (ecs->HasComponent<RotationComponent>(selectedEntity))
             {
                 if (ImGui::CollapsingHeader("Rotation Animation"))
@@ -477,13 +474,6 @@ private:
                 if (ImGui::Button("Add Rotation Component"))
                     ecs->AddComponent<RotationComponent>(selectedEntity);
             }
-            
-            if (ecs->HasComponent<MeshComponent>(selectedEntity))
-                if (ImGui::CollapsingHeader("Mesh Renderer"))
-                {
-                    ImGui::BulletText("Type: Mesh");
-                    ImGui::BulletText("Has Mesh: Yes");
-                }
             
             if (ImGui::CollapsingHeader("Material"))
             {
@@ -512,15 +502,10 @@ private:
                                 matComp.material = material;
                             }
                             else
-                            {
                                 ecs->AddComponent<MaterialComponent>(selectedEntity, material);
-                            }
                             
-                            // Видаляємо ColorComponent щоб матеріал беруся з MaterialComponent
                             if (ecs->HasComponent<ColorComponent>(selectedEntity))
-                            {
                                 ecs->RemoveComponent<ColorComponent>(selectedEntity);
-                            }
                             
                             Logger::Log(LogLevel::INFO, LogCategory::RENDERING, 
                                 "Material '" + name + "' assigned to entity");
@@ -540,6 +525,147 @@ private:
                     }
                 }
             } 
+
+            if (ecs->HasComponent<LightComponent>(selectedEntity))
+            {
+                if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    auto& light = ecs->GetComponent<LightComponent>(selectedEntity);
+                    
+                    const char* lightTypes[] = { "Directional", "Point", "Spot" };
+                    int currentType = static_cast<int>(light.type);
+                    
+                    ImGui::Text("Light Type");
+                    if (ImGui::Combo("##LightType", &currentType, lightTypes, 3))
+                    {
+                        light.type = static_cast<LightType>(currentType);
+                        
+                        if (light.type == LightType::DIRECTIONAL)
+                        {
+                            light.ambient = glm::vec3(0.05f);
+                            light.diffuse = glm::vec3(0.4f);
+                            light.specular = glm::vec3(0.5f);
+                        }
+                        else if (light.type == LightType::POINT)
+                        {
+                            light.ambient = glm::vec3(0.05f);
+                            light.diffuse = glm::vec3(0.8f);
+                            light.specular = glm::vec3(1.0f);
+                        }
+                        else if (light.type == LightType::SPOT)
+                        {
+                            light.ambient = glm::vec3(0.0f);
+                            light.diffuse = glm::vec3(1.0f);
+                            light.specular = glm::vec3(1.0f);
+                        }
+                    }
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
+                    ImGui::Checkbox("Active##Light", &light.isActive);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Cast Shadows", &light.castShadows);
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
+                    if (light.type == LightType::DIRECTIONAL || light.type == LightType::SPOT)
+                    {
+                        ImGui::Text("Direction");
+                        ImGui::DragFloat3("##Direction", &light.direction[0], 0.1f, -1.0f, 1.0f);
+                        
+                        if (glm::length(light.direction) > 0.001f)
+                            light.direction = glm::normalize(light.direction);
+                        
+                        ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Spacing();
+                    }
+                    
+                    ImGui::Text("Intensity");
+                    ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
+                    ImGui::Text("Ambient Color");
+                    float ambient[3] = { light.ambient.r, light.ambient.g, light.ambient.b };
+                    if (ImGui::ColorEdit3("##Ambient", ambient))
+                        light.ambient = glm::vec3(ambient[0], ambient[1], ambient[2]);
+                    
+                    ImGui::Spacing();
+                    
+                    ImGui::Text("Diffuse Color");
+                    float diffuse[3] = { light.diffuse.r, light.diffuse.g, light.diffuse.b };
+                    if (ImGui::ColorEdit3("##Diffuse", diffuse))
+                        light.diffuse = glm::vec3(diffuse[0], diffuse[1], diffuse[2]);
+                    
+                    ImGui::Spacing();
+                    
+                    ImGui::Text("Specular Color");
+                    float specular[3] = { light.specular.r, light.specular.g, light.specular.b };
+                    if (ImGui::ColorEdit3("##Specular", specular))
+                        light.specular = glm::vec3(specular[0], specular[1], specular[2]);
+                    
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
+                    if (light.type == LightType::POINT || light.type == LightType::SPOT)
+                    {
+                        ImGui::Text("Attenuation");
+                        
+                        ImGui::Text("Constant");
+                        ImGui::DragFloat("##Constant", &light.constant, 0.01f, 0.0f, 10.0f);
+                        
+                        ImGui::Text("Linear");
+                        ImGui::DragFloat("##Linear", &light.linear, 0.001f, 0.0f, 1.0f);
+                        
+                        ImGui::Text("Quadratic");
+                        ImGui::DragFloat("##Quadratic", &light.quadratic, 0.001f, 0.0f, 1.0f);
+                        
+                        ImGui::Text("Radius");
+                        ImGui::DragFloat("##Radius", &light.radius, 0.5f, 1.0f, 100.0f);
+                        
+                        ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Spacing();
+                    }
+                    
+                    if (light.type == LightType::SPOT)
+                    {
+                        ImGui::Text("Spot Cone");
+                        
+                        ImGui::Text("Inner Cutoff (degrees)");
+                        ImGui::DragFloat("##InnerCutoff", &light.innerCutoff, 0.5f, 0.0f, 90.0f);
+                        
+                        ImGui::Text("Outer Cutoff (degrees)");
+                        ImGui::DragFloat("##OuterCutoff", &light.outerCutoff, 0.5f, 0.0f, 90.0f);
+                        
+                        if (light.outerCutoff < light.innerCutoff)
+                            light.outerCutoff = light.innerCutoff;
+                        
+                        ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Spacing();
+                    }
+                    
+                    // if (ImGui::Button("Remove Light Component", ImVec2(-1, 0)))
+                    //     ecs->RemoveComponent<LightComponent>(selectedEntity);
+                }
+            }
+            // else
+            // {
+            //     if (ImGui::Button("Add Light Component", ImVec2(-1, 0)))
+            //     {
+            //         ecs->AddComponent<LightComponent>(selectedEntity, LightType::DIRECTIONAL);
+            //         Logger::Log(LogLevel::INFO, "Light component added to entity");
+            //     }
+            // }
         }
         else if (selectedShader != nullptr && !selectedShader->name.empty() && shaderManager->IsShaderValid(selectedShader->name))
         {

@@ -13,7 +13,6 @@ import XEngine.Core.Window;
 import XEngine.Core.Input;
 import XEngine.Core.Time;
 import XEngine.Core.Camera;
-import XEngine.UI.ImGuiManager;
 import XEngine.Core.Logger;
 import XEngine.Core.Logging.ConsoleLogger;
 import XEngine.Core.Logging.FileLogger;
@@ -21,10 +20,12 @@ import XEngine.Core.Logging.FileLogger;
 import XEngine.ECS.ECSWorld;
 
 import XEngine.Rendering.Renderer; 
+
 import XEngine.Resource.Texture.TextureManager;
 import XEngine.Resource.Material.MaterialManager;
-
 import XEngine.Resource.Shader.ShaderManager;
+
+import XEngine.UI.ImGuiManager;
 
 export class Application 
 {

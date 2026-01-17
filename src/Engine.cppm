@@ -27,6 +27,7 @@ import XEngine.Core.Logger;
 import XEngine.Rendering.Skybox;
 import XEngine.Rendering.Framebuffer;
 import XEngine.Rendering.Primitive.PrimitivesFactory;
+import XEngine.Rendering.Light;
 
 import XEngine.Scene.Mesh;
 import XEngine.Scene.Model;
@@ -46,6 +47,7 @@ private:
 
     std::unique_ptr<RenderSystem> renderSystem;
     std::unique_ptr<RotationSystem> rotationSystem;
+    std::unique_ptr<LightSystem> lightSystem;
 
 protected:
     void OnInitialize() override
@@ -71,6 +73,7 @@ protected:
 
         renderSystem = std::make_unique<RenderSystem>();
         rotationSystem = std::make_unique<RotationSystem>();
+        lightSystem = std::make_unique<LightSystem>();
 
         InitCommandRegistration();
 
@@ -91,6 +94,7 @@ protected:
     void OnUpdate(float deltaTime) override
     {
         rotationSystem->Update(*GetECSWorld(), deltaTime);
+        lightSystem->Update(*GetECSWorld(), *GetShaderManager(), "basic");
     }
 
     void OnRender() override
@@ -236,6 +240,54 @@ private:
                 if (meshComp.mesh)
                     meshComp.mesh->SetColor(color);
             }
+        });
+
+        CommandManager::RegisterCommand("onCreateDirectionalLight",
+        [this](const CommandArgs&) 
+        {
+            auto entity = GetECSWorld()->CreateEntity("Directional Light");
+            
+            GetECSWorld()->AddComponent<TransformComponent>(entity, 
+                glm::vec3(0, 10, 0), 
+                glm::vec3(45, 0, 0), 
+                glm::vec3(1));
+            
+            GetECSWorld()->AddComponent<LightComponent>(entity, LightType::DIRECTIONAL);
+            GetECSWorld()->AddComponent<VisibilityComponent>(entity, true);
+            
+            Logger::Log(LogLevel::INFO, "Directional light created");
+        });
+
+        CommandManager::RegisterCommand("onCreatePointLight",
+        [this](const CommandArgs&) 
+        {
+            auto entity = GetECSWorld()->CreateEntity("Point Light");
+            
+            GetECSWorld()->AddComponent<TransformComponent>(entity, 
+                glm::vec3(0, 5, 0), 
+                glm::vec3(0), 
+                glm::vec3(1));
+            
+            GetECSWorld()->AddComponent<LightComponent>(entity, LightType::POINT);
+            GetECSWorld()->AddComponent<VisibilityComponent>(entity, true);
+            
+            Logger::Log(LogLevel::INFO, "Point light created");
+        });
+
+        CommandManager::RegisterCommand("onCreateSpotLight",
+        [this](const CommandArgs&) 
+        {
+            auto entity = GetECSWorld()->CreateEntity("Spot Light");
+            
+            GetECSWorld()->AddComponent<TransformComponent>(entity, 
+                glm::vec3(0, 5, 0), 
+                glm::vec3(45, 0, 0), 
+                glm::vec3(1));
+            
+            GetECSWorld()->AddComponent<LightComponent>(entity, LightType::SPOT);
+            GetECSWorld()->AddComponent<VisibilityComponent>(entity, true);
+            
+            Logger::Log(LogLevel::INFO, "Spot light created");
         });
     }
 };

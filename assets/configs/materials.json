@@ -36,6 +36,13 @@
             "name": "silver_material",
             "type": "color",
             "color": [0.75, 0.75, 0.75]
+        },
+        {
+            "name": "rust_metal",
+            "type": "texture",
+            "diffuse": "textures/rust_metal.jpg",
+            "normal":  "textures/rust_metal_normal.jpg",
+            "height":  "textures/rust_metal_height.jpg"
         }
     ]
 }
